@@ -1,0 +1,6 @@
+id=pijar_frontend
+name=Pijar Frontend (system app + Home)
+version=v0.1.0
+versionCode=1
+author=wakeupver
+description=Memasang Pijar sebagai system app dan menjadikannya aplikasi Home pada boot pertama. Gestur sistem tetap ditangani Trebuchet/Quickstep bawaan ROM.
