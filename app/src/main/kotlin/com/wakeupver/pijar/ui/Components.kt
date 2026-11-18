@@ -38,8 +38,6 @@ import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarColors
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,7 +47,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
@@ -126,9 +123,6 @@ object PlatformShapes {
     )
 
     fun forKey(key: String): RoundedPolygon = polygons[(key.hashCode() and Int.MAX_VALUE) % polygons.size]
-
-    @Composable
-    fun shapeForKey(key: String): Shape = forKey(key).toShape()
 }
 
 /** Pasangan (latar, isi) yang stabil per platform, diambil dari skema warna aktif. */
@@ -146,27 +140,16 @@ fun badgeColors(key: String): Pair<Color, Color> {
     return options[(key.hashCode() and Int.MAX_VALUE) % options.size]
 }
 
-/** Warna bilah atas yang tetap, supaya tidak berkedip saat warna latar berubah ketika digulir. */
-@Composable
-fun pijarTopAppBarColors(): TopAppBarColors {
-    val container = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
-    return TopAppBarDefaults.topAppBarColors(
-        containerColor = container,
-        scrolledContainerColor = container,
-    )
-}
-
 @Composable
 fun PlatformBadge(shortName: String, key: String, size: Dp, modifier: Modifier = Modifier) {
-    val shape = PlatformShapes.shapeForKey(key)
-    val label = remember(shortName) { shortName.uppercase().take(4) }
+    val shape = PlatformShapes.forKey(key).toShape()
     val colors = badgeColors(key)
     Box(
         modifier = modifier.size(size).clip(shape).background(colors.first),
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = label,
+            text = shortName.uppercase().take(4),
             color = colors.second,
             fontWeight = FontWeight.Black,
             fontSize = (size.value * 0.26f).sp,
@@ -178,11 +161,8 @@ fun PlatformBadge(shortName: String, key: String, size: Dp, modifier: Modifier =
 /** Gambar sampul lokal bila ada; jika tidak, lencana platform. */
 @Composable
 fun GameArt(game: GameRecord, platform: PlatformDef?, modifier: Modifier = Modifier, badgeSize: Dp = 64.dp) {
-    val known = remember(game.path) { ArtFinder.cached(game.path) }
-    val art by produceState<File?>(known, game.path) {
-        if (value == null && !ArtFinder.isCached(game.path)) {
-            value = withContext(Dispatchers.IO) { ArtFinder.find(game.path) }
-        }
+    val art by produceState<File?>(null, game.path) {
+        value = withContext(Dispatchers.IO) { ArtFinder.find(game.path) }
     }
     val colors = badgeColors(game.platformId)
     Box(

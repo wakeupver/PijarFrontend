@@ -34,14 +34,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
+import androidx.compose.material3.carousel.rememberCarouselState
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -87,88 +90,86 @@ fun HomeScreen(
     val edge = maxOf(20.dp, gestureInsets.calculateStartPadding(layoutDirection))
     val hero = recent.firstOrNull()
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        HomeHeader(platformCount = platforms.size, gameCount = state.games.size)
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding() + 24.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        item { HomeHeader(platformCount = platforms.size, gameCount = state.games.size) }
 
-        LazyColumn(
-            modifier = Modifier.weight(1f).fillMaxWidth().clipToBounds(),
-            contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding() + 24.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
-        ) {
-            if (!storageGranted) {
-                item(key = "storage", contentType = "banner") { StorageBanner(onGrant = onGrantStorage) }
+        if (!storageGranted) {
+            item { StorageBanner(onGrant = onGrantStorage) }
+        }
+
+        if (platforms.isEmpty()) {
+            item {
+                EmptyState(
+                    title = stringResource(R.string.home_empty_title),
+                    body = stringResource(R.string.home_empty_body),
+                    actionLabel = stringResource(R.string.action_add_platform),
+                    onAction = onAddPlatform,
+                )
             }
-
-            if (platforms.isEmpty()) {
-                item(key = "empty", contentType = "empty") {
-                    EmptyState(
-                        title = stringResource(R.string.home_empty_title),
-                        body = stringResource(R.string.home_empty_body),
-                        actionLabel = stringResource(R.string.action_add_platform),
-                        onAction = onAddPlatform,
+        } else {
+            if (hero != null) {
+                item {
+                    HeroCard(
+                        game = hero,
+                        platform = catalog[hero.platformId],
+                        onOpen = { onOpenGame(hero) },
+                        onPlay = { onPlay(hero) },
                     )
                 }
-            } else {
-                if (hero != null) {
-                    item(key = "hero", contentType = "hero") {
-                        HeroCard(
-                            game = hero,
-                            platform = catalog[hero.platformId],
-                            onOpen = { onOpenGame(hero) },
-                            onPlay = { onPlay(hero) },
-                        )
-                    }
-                }
-                item(key = "platforms", contentType = "platforms") {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        SectionHeader(
-                            text = stringResource(R.string.home_platforms),
-                            trailing = {
-                                TextButton(onClick = onAddPlatform) {
-                                    Text(stringResource(R.string.action_add_platform))
-                                }
-                            },
-                        )
-                        LazyRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentPadding = PaddingValues(horizontal = edge),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            items(platforms, key = { it.uniqueId }, contentType = { "platform" }) { def ->
-                                PlatformCard(
-                                    def = def,
-                                    count = counts[def.uniqueId] ?: 0,
-                                    onClick = { onOpenPlatform(def.uniqueId) },
-                                    modifier = Modifier
-                                        .width(232.dp)
-                                        .height(208.dp)
-                                        .clip(MaterialTheme.shapes.extraLarge),
-                                )
+            }
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SectionHeader(
+                        text = stringResource(R.string.home_platforms),
+                        trailing = {
+                            TextButton(onClick = onAddPlatform) {
+                                Text(stringResource(R.string.action_add_platform))
                             }
+                        },
+                    )
+                    key(platforms.size) {
+                        HorizontalMultiBrowseCarousel(
+                            state = rememberCarouselState { platforms.size },
+                            preferredItemWidth = 232.dp,
+                            modifier = Modifier.fillMaxWidth().height(208.dp),
+                            itemSpacing = 10.dp,
+                            contentPadding = PaddingValues(horizontal = edge),
+                        ) { index ->
+                            val def = platforms[index]
+                            PlatformCard(
+                                def = def,
+                                count = counts[def.uniqueId] ?: 0,
+                                onClick = { onOpenPlatform(def.uniqueId) },
+                                modifier = Modifier.maskClip(MaterialTheme.shapes.extraLarge),
+                            )
                         }
                     }
                 }
-                if (recent.isNotEmpty()) {
-                    item(key = "recent", contentType = "shelf") {
-                        GameShelf(
-                            title = stringResource(R.string.home_recent),
-                            games = recent,
-                            catalog = catalog,
-                            edge = edge,
-                            onOpen = onOpenGame,
-                        )
-                    }
+            }
+            if (recent.isNotEmpty()) {
+                item {
+                    GameShelf(
+                        title = stringResource(R.string.home_recent),
+                        games = recent,
+                        catalog = catalog,
+                        edge = edge,
+                        onOpen = onOpenGame,
+                    )
                 }
-                if (favorites.isNotEmpty()) {
-                    item(key = "favorites", contentType = "shelf") {
-                        GameShelf(
-                            title = stringResource(R.string.home_favorites),
-                            games = favorites,
-                            catalog = catalog,
-                            edge = edge,
-                            onOpen = onOpenGame,
-                        )
-                    }
+            }
+            if (favorites.isNotEmpty()) {
+                item {
+                    GameShelf(
+                        title = stringResource(R.string.home_favorites),
+                        games = favorites,
+                        catalog = catalog,
+                        edge = edge,
+                        onOpen = onOpenGame,
+                    )
                 }
             }
         }
@@ -186,7 +187,7 @@ private fun HomeHeader(platformCount: Int, gameCount: Int) {
             else -> R.string.greeting_night
         },
     )
-    Column(modifier = Modifier.statusBarsPadding().padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 12.dp)) {
+    Column(modifier = Modifier.statusBarsPadding().padding(start = 24.dp, end = 24.dp, top = 20.dp)) {
         Text(text = greeting, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         Text(text = stringResource(R.string.app_name), style = MaterialTheme.typography.displayMedium)
         Text(
@@ -270,8 +271,7 @@ private fun HeroCard(game: GameRecord, platform: PlatformDef?, onOpen: () -> Uni
 @Composable
 private fun PlatformCard(def: PlatformDef, count: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = badgeColors(def.uniqueId)
-    val decoShape = PlatformShapes.shapeForKey(def.uniqueId + "#deco")
-    val label = remember(def.shortName) { def.shortName.uppercase().take(6) }
+    val decoShape = PlatformShapes.forKey(def.uniqueId + "#deco").toShape()
     Box(modifier = modifier.fillMaxSize().background(colors.first).clickable(onClick = onClick)) {
         Box(
             modifier = Modifier
@@ -282,7 +282,7 @@ private fun PlatformCard(def: PlatformDef, count: Int, onClick: () -> Unit, modi
                 .background(colors.second.copy(alpha = 0.12f)),
         )
         Text(
-            text = label,
+            text = def.shortName.uppercase().take(6),
             color = colors.second,
             style = MaterialTheme.typography.displaySmall,
             maxLines = 1,

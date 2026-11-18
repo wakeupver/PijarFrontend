@@ -76,7 +76,10 @@ fun SettingsScreen(
     Column(modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection)) {
         LargeTopAppBar(
             title = { Text(stringResource(R.string.settings_title)) },
-            colors = pijarTopAppBarColors(),
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = Color.Transparent,
+                scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+            ),
             scrollBehavior = scrollBehavior,
         )
         LazyColumn(
