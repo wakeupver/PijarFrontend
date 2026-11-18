@@ -107,12 +107,21 @@ fun PijarRoot(vm: MainViewModel) {
         isDefaultHome = SystemUi.isDefaultHome(context)
     }
 
-    val navItems = listOf(
-        NavItem(stringResource(R.string.nav_home), Icons.Rounded.Home),
-        NavItem(stringResource(R.string.nav_library), PijarIcons.Library),
-        NavItem(stringResource(R.string.nav_apps), PijarIcons.Apps),
-        NavItem(stringResource(R.string.nav_settings), Icons.Rounded.Settings),
-    )
+    // Daftar dan callback dibuat sekali agar bilah navigasi tidak ikut direkomposisi
+    // ketika state lain (mis. progres pemindaian) berubah.
+    val homeLabel = stringResource(R.string.nav_home)
+    val libraryLabel = stringResource(R.string.nav_library)
+    val appsLabel = stringResource(R.string.nav_apps)
+    val settingsLabel = stringResource(R.string.nav_settings)
+    val navItems = remember(homeLabel, libraryLabel, appsLabel, settingsLabel) {
+        listOf(
+            NavItem(homeLabel, Icons.Rounded.Home),
+            NavItem(libraryLabel, PijarIcons.Library),
+            NavItem(appsLabel, PijarIcons.Apps),
+            NavItem(settingsLabel, Icons.Rounded.Settings),
+        )
+    }
+    val onSelectTab: (Int) -> Unit = remember { { tab = it } }
     val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     val scrimAlpha = if (state.prefs.showWallpaper) 0.88f else 1f
 
@@ -130,7 +139,7 @@ fun PijarRoot(vm: MainViewModel) {
                         modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 12.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        FloatingNavBar(items = navItems, selectedIndex = tab, onSelect = { tab = it })
+                        FloatingNavBar(items = navItems, selectedIndex = tab, onSelect = onSelectTab)
                     }
                 }
             },

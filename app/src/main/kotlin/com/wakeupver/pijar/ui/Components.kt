@@ -2,15 +2,10 @@
 
 package com.wakeupver.pijar.ui
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -48,25 +43,33 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.graphics.shapes.RoundedPolygon
@@ -77,6 +80,7 @@ import com.wakeupver.pijar.data.ArtFinder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import kotlin.math.roundToInt
 
 /** Spesifikasi gerak mengikuti skema "expressive" Material 3 (pegas memantul untuk spasial, kaku untuk efek). */
 object Motion {
@@ -350,7 +354,19 @@ fun EmptyState(
     }
 }
 
+@Immutable
 data class NavItem(val label: String, val icon: ImageVector)
+
+// Spesifikasi dibagikan agar tidak membuat objek spring baru di setiap frame animasi.
+private val NavPillExpansionSpec: FiniteAnimationSpec<Float> = Motion.defaultSpatial<Float>()
+private val NavPillFadeSpec: FiniteAnimationSpec<Float> = Motion.fastEffects<Float>()
+private val NavPillShape = RoundedCornerShape(28.dp)
+private val NavBarShape = RoundedCornerShape(40.dp)
+private val NavPillHeight = 56.dp
+private val NavPillCollapsedWidth = 56.dp
+private val NavPillExpandedWidth = 132.dp
+private val NavPillIconSize = 24.dp
+private val NavPillLabelGap = 8.dp
 
 /** Bilah navigasi melayang berbentuk pil; item terpilih melebar dan menampilkan label. */
 @Composable
@@ -362,7 +378,7 @@ fun FloatingNavBar(
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(40.dp),
+        shape = NavBarShape,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         tonalElevation = 3.dp,
         shadowElevation = 10.dp,
@@ -382,41 +398,110 @@ fun FloatingNavBar(
 @Composable
 private fun NavPill(item: NavItem, selected: Boolean, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
-    // Satu animasi untuk lebar, latar, dan warna ikon. Interpolasi antara dua warna opak
-    // (bukan Color.Transparent) menghindari kedip gelap saat pil terpilih dianimasikan.
-    val expansion by animateFloatAsState(
+    // Satu animasi untuk lebar, latar, dan warna ikon. Nilainya dibaca di fase layout/draw
+    // sehingga animasi tidak memicu rekombinasi seluruh pil di setiap frame.
+    val expansion = animateFloatAsState(
         targetValue = if (selected) 1f else 0f,
-        animationSpec = Motion.defaultSpatial(),
+        animationSpec = NavPillExpansionSpec,
         label = "navPillExpansion",
     )
-    val container = lerp(colors.surfaceContainerHigh, colors.primaryContainer, expansion)
-    val tint = lerp(colors.onSurfaceVariant, colors.onPrimaryContainer, expansion)
+    val labelAlpha = animateFloatAsState(
+        targetValue = if (selected) 1f else 0f,
+        animationSpec = NavPillFadeSpec,
+        label = "navPillLabelAlpha",
+    )
+    val containerStart = colors.surfaceContainerHigh
+    val containerEnd = colors.primaryContainer
     Row(
         modifier = Modifier
-            .height(56.dp)
-            .width((56 + 76 * expansion).dp)
-            .clip(RoundedCornerShape(28.dp))
-            .background(container)
+            .height(NavPillHeight)
+            .navPillWidth(expansion)
+            .clip(NavPillShape)
+            .drawBehind { drawRect(lerp(containerStart, containerEnd, expansion.value)) }
             .clickable(role = Role.Tab, onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
-        Icon(imageVector = item.icon, contentDescription = item.label, tint = tint, modifier = Modifier.size(24.dp))
-        AnimatedVisibility(
-            visible = selected,
-            enter = expandHorizontally(animationSpec = Motion.defaultSpatial()) + fadeIn(animationSpec = Motion.fastEffects()),
-            exit = shrinkHorizontally(animationSpec = Motion.defaultSpatial()) + fadeOut(animationSpec = Motion.fastEffects()),
+        NavPillIcon(
+            item = item,
+            startColor = colors.onSurfaceVariant,
+            endColor = colors.onPrimaryContainer,
+            expansion = expansion,
+        )
+        Box(
+            modifier = Modifier
+                .then(if (selected) Modifier else Modifier.clearAndSetSemantics {})
+                .graphicsLayer {
+                    alpha = labelAlpha.value
+                    clip = true
+                }
+                .navLabelWidth(expansion, anchorAtEnd = selected),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = item.label,
-                    color = tint,
-                    style = MaterialTheme.typography.labelLarge,
-                    maxLines = 1,
-                    softWrap = false,
-                )
-            }
+            NavPillLabel(
+                item = item,
+                startColor = colors.onSurfaceVariant,
+                endColor = colors.onPrimaryContainer,
+                expansion = expansion,
+            )
         }
     }
 }
+
+@Composable
+private fun NavPillIcon(
+    item: NavItem,
+    startColor: Color,
+    endColor: Color,
+    expansion: State<Float>,
+) {
+    Icon(
+        imageVector = item.icon,
+        contentDescription = item.label,
+        tint = lerp(startColor, endColor, expansion.value),
+        modifier = Modifier.size(NavPillIconSize),
+    )
+}
+
+@Composable
+private fun NavPillLabel(
+    item: NavItem,
+    startColor: Color,
+    endColor: Color,
+    expansion: State<Float>,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Spacer(Modifier.width(NavPillLabelGap))
+        Text(
+            text = item.label,
+            color = lerp(startColor, endColor, expansion.value),
+            style = MaterialTheme.typography.labelLarge,
+            maxLines = 1,
+            softWrap = false,
+        )
+    }
+}
+
+/** Lebar pil dianimasikan di fase pengukuran, bukan lewat modifier width di komposisi. */
+private fun Modifier.navPillWidth(expansion: State<Float>): Modifier = layout { measurable, constraints ->
+    val collapsed = NavPillCollapsedWidth.roundToPx()
+    val expanded = NavPillExpandedWidth.roundToPx()
+    val width = (collapsed + (expanded - collapsed) * expansion.value).roundToInt()
+    val placeable = measurable.measure(constraints.copy(minWidth = width, maxWidth = width))
+    layout(width, placeable.height) { placeable.place(0, 0) }
+}
+
+/**
+ * Lebar label mengikuti animasi pil yang sama. Konten diukur sekali dengan lebar bebas
+ * (teks tidak diukur ulang tiap frame) lalu dipotong seperti expandHorizontally (dari End)
+ * dan shrinkHorizontally (menuju Start).
+ */
+private fun Modifier.navLabelWidth(expansion: State<Float>, anchorAtEnd: Boolean): Modifier =
+    layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints.copy(minWidth = 0, maxWidth = Constraints.Infinity))
+        val width = (placeable.width * expansion.value).roundToInt().coerceIn(0, placeable.width)
+        layout(width, placeable.height) {
+            val atEnd = anchorAtEnd == (layoutDirection == LayoutDirection.Ltr)
+            val x = if (atEnd) width - placeable.width else 0
+            placeable.place(x, 0)
+        }
+    }
