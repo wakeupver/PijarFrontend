@@ -71,7 +71,6 @@ import com.wakeupver.pijar.data.ArtFinder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.util.concurrent.ConcurrentHashMap
 
 /** Spesifikasi gerak mengikuti skema "expressive" Material 3 (pegas memantul untuk spasial, kaku untuk efek). */
 object Motion {
@@ -128,9 +127,8 @@ object PlatformShapes {
 
     fun forKey(key: String): RoundedPolygon = polygons[(key.hashCode() and Int.MAX_VALUE) % polygons.size]
 
-    private val shapeCache = ConcurrentHashMap<String, Shape>()
-
-    fun shapeForKey(key: String): Shape = shapeCache.getOrPut(key) { forKey(key).toShape() }
+    @Composable
+    fun shapeForKey(key: String): Shape = forKey(key).toShape()
 }
 
 /** Pasangan (latar, isi) yang stabil per platform, diambil dari skema warna aktif. */
