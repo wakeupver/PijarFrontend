@@ -33,10 +33,12 @@ fun PijarTheme(prefs: UiPrefs, content: @Composable () -> Unit) {
     val dark = isSystemInDarkTheme()
     val context = LocalContext.current
     val useDynamic = prefs.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-    val scheme = if (useDynamic) {
-        if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-    } else {
-        remember(prefs.accentHue, dark) { accentColorScheme(prefs.accentHue, dark) }
+    val scheme = remember(useDynamic, dark, prefs.accentHue) {
+        if (useDynamic) {
+            if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        } else {
+            accentColorScheme(prefs.accentHue, dark)
+        }
     }
     MaterialExpressiveTheme(
         colorScheme = scheme,

@@ -31,7 +31,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.LoadingIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -111,10 +110,7 @@ fun LibraryScreen(
                     }
                 }
             },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent,
-                scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-            ),
+            colors = pijarTopAppBarColors(),
             scrollBehavior = scrollBehavior,
         )
 
@@ -140,7 +136,7 @@ fun LibraryScreen(
                     leadingIcon = { Icon(Icons.Rounded.Favorite, contentDescription = null, modifier = Modifier.size(18.dp)) },
                 )
             }
-            items(platforms, key = { it.uniqueId }) { def ->
+            items(platforms, key = { it.uniqueId }, contentType = { "platform" }) { def ->
                 FilterChip(
                     selected = selectedPlatform == def.uniqueId,
                     onClick = { onSelectPlatform(def.uniqueId) },
@@ -212,7 +208,7 @@ fun LibraryScreen(
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
-                items(games, key = { it.id }) { game ->
+                items(games, key = { it.id }, contentType = { "game" }) { game ->
                     GameCard(
                         game = game,
                         platform = catalog[game.platformId],

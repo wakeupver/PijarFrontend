@@ -41,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -51,6 +52,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.wakeupver.pijar.R
 import com.wakeupver.pijar.data.AppEntry
+import java.util.WeakHashMap
+
+/** Konversi ikon hanya sekali per entri; item yang keluar-masuk viewport tidak mengulang alokasi bitmap. */
+private val appIconCache = WeakHashMap<AppEntry, ImageBitmap>()
 
 @Composable
 fun AppsScreen(
@@ -69,10 +74,7 @@ fun AppsScreen(
     Column(modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection)) {
         LargeTopAppBar(
             title = { Text(stringResource(R.string.apps_title)) },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent,
-                scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-            ),
+            colors = pijarTopAppBarColors(),
             scrollBehavior = scrollBehavior,
         )
         TextField(
@@ -118,7 +120,7 @@ fun AppsScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                items(filtered, key = { it.packageName + "/" + it.activity }) { app ->
+                items(filtered, key = { it.packageName + "/" + it.activity }, contentType = { "app" }) { app ->
                     AppTile(app = app, onLaunch = { onLaunch(app) }, onInfo = { onInfo(app) })
                 }
             }
@@ -128,7 +130,7 @@ fun AppsScreen(
 
 @Composable
 private fun AppTile(app: AppEntry, onLaunch: () -> Unit, onInfo: () -> Unit) {
-    val image = remember(app) { app.icon.asImageBitmap() }
+    val image = remember(app) { appIconCache.getOrPut(app) { app.icon.asImageBitmap() } }
     val haptics = LocalHapticFeedback.current
     Column(
         modifier = Modifier

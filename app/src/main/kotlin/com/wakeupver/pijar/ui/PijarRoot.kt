@@ -9,7 +9,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -112,12 +111,18 @@ fun PijarRoot(vm: MainViewModel) {
         isDefaultHome = SystemUi.isDefaultHome(context)
     }
 
-    val navItems = listOf(
-        NavItem(stringResource(R.string.nav_home), Icons.Rounded.Home),
-        NavItem(stringResource(R.string.nav_library), PijarIcons.Library),
-        NavItem(stringResource(R.string.nav_apps), PijarIcons.Apps),
-        NavItem(stringResource(R.string.nav_settings), Icons.Rounded.Settings),
-    )
+    val navHome = stringResource(R.string.nav_home)
+    val navLibrary = stringResource(R.string.nav_library)
+    val navApps = stringResource(R.string.nav_apps)
+    val navSettings = stringResource(R.string.nav_settings)
+    val navItems = remember(navHome, navLibrary, navApps, navSettings) {
+        listOf(
+            NavItem(navHome, Icons.Rounded.Home),
+            NavItem(navLibrary, PijarIcons.Library),
+            NavItem(navApps, PijarIcons.Apps),
+            NavItem(navSettings, Icons.Rounded.Settings),
+        )
+    }
     val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     val scrimAlpha = if (state.prefs.showWallpaper) 0.88f else 1f
 
@@ -144,8 +149,7 @@ fun PijarRoot(vm: MainViewModel) {
                 targetState = tab,
                 modifier = Modifier.fillMaxSize().imePadding(),
                 transitionSpec = {
-                    (fadeIn(Motion.defaultEffects()) + scaleIn(initialScale = 0.96f, animationSpec = Motion.defaultSpatial())) togetherWith
-                        fadeOut(Motion.fastEffects())
+                    fadeIn(Motion.fastEffects()) togetherWith fadeOut(Motion.fastEffects())
                 },
                 label = "tab",
             ) { current ->

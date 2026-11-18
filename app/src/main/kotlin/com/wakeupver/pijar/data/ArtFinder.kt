@@ -6,9 +6,15 @@ import java.util.concurrent.ConcurrentHashMap
 
 /** Mencari gambar sampul lokal di samping berkas ROM (nama sama) atau di subfolder media umum. */
 object ArtFinder {
+    private const val MAX_CACHE = 4096
     private val cache = ConcurrentHashMap<String, String>()
     private val EXTENSIONS = listOf("png", "jpg", "jpeg", "webp")
     private val FOLDERS = listOf("", "media", "images", "boxart", "covers", "Named_Boxarts")
+
+    /** Hasil yang sudah ada di cache (termasuk hasil negatif), tanpa menyentuh disk. */
+    fun cached(romPath: String): File? = cache[romPath]?.takeIf { it.isNotEmpty() }?.let(::File)
+
+    fun isCached(romPath: String): Boolean = cache.containsKey(romPath)
 
     fun find(romPath: String): File? {
         val cached = cache[romPath]
@@ -30,6 +36,7 @@ object ArtFinder {
                 }
             }
         }
+        if (cache.size >= MAX_CACHE) cache.clear()
         cache[romPath] = found?.path ?: ""
         return found
     }
