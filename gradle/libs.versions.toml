@@ -10,6 +10,7 @@ activityCompose = "1.10.1"
 lifecycle = "2.9.0"
 coreKtx = "1.16.0"
 coil = "2.7.0"
+materialkolor = "3.0.0"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -23,6 +24,7 @@ androidx-compose-material-icons-core = { module = "androidx.compose.material:mat
 androidx-graphics-shapes = { module = "androidx.graphics:graphics-shapes", version.ref = "graphicsShapes" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
+materialkolor-color-utilities = { module = "com.materialkolor:material-color-utilities", version.ref = "materialkolor" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

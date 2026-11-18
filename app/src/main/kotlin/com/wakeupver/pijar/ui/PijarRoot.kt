@@ -6,11 +6,6 @@ import android.content.ActivityNotFoundException
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -140,16 +135,10 @@ fun PijarRoot(vm: MainViewModel) {
                 }
             },
         ) { padding ->
-            AnimatedContent(
-                targetState = tab,
-                modifier = Modifier.fillMaxSize().imePadding(),
-                transitionSpec = {
-                    (fadeIn(Motion.defaultEffects()) + scaleIn(initialScale = 0.96f, animationSpec = Motion.defaultSpatial())) togetherWith
-                        fadeOut(Motion.fastEffects())
-                },
-                label = "tab",
-            ) { current ->
-                when (current) {
+            // Ganti tab langsung tanpa crossfade seluruh layar: transisi lama menduplikasi
+            // top app bar/judul sehingga tampak berkedip saat item navigasi diketuk.
+            Box(modifier = Modifier.fillMaxSize().imePadding()) {
+                when (tab) {
                     TAB_HOME -> HomeScreen(
                         state = state,
                         catalog = catalog,

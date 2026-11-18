@@ -2,10 +2,15 @@
 
 package com.wakeupver.pijar.ui
 
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -34,10 +39,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,6 +56,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -73,7 +82,6 @@ import java.io.File
 object Motion {
     fun <T> fastSpatial(): FiniteAnimationSpec<T> = spring(dampingRatio = 0.6f, stiffness = 800f)
     fun <T> defaultSpatial(): FiniteAnimationSpec<T> = spring(dampingRatio = 0.8f, stiffness = 380f)
-    fun <T> defaultEffects(): FiniteAnimationSpec<T> = spring(dampingRatio = 1f, stiffness = 1600f)
     fun <T> fastEffects(): FiniteAnimationSpec<T> = spring(dampingRatio = 1f, stiffness = 3800f)
 }
 
@@ -269,6 +277,28 @@ fun ExpressiveButton(
     }
 }
 
+/**
+ * Top app bar dengan latar statis. Warna container tidak lagi dianimasikan antara transparan dan
+ * `surfaceContainer` saat discroll, sehingga bilah tidak "berkedip" ketika status gulir berubah.
+ */
+@Composable
+fun PijarTopBar(
+    title: String,
+    scrollBehavior: TopAppBarScrollBehavior,
+    actions: @Composable RowScope.() -> Unit = {},
+) {
+    LargeTopAppBar(
+        title = { Text(title) },
+        modifier = Modifier.background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)),
+        actions = actions,
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent,
+            scrolledContainerColor = Color.Transparent,
+        ),
+        scrollBehavior = scrollBehavior,
+    )
+}
+
 @Composable
 fun SectionHeader(text: String, modifier: Modifier = Modifier, trailing: (@Composable () -> Unit)? = null) {
     Row(
@@ -351,21 +381,20 @@ fun FloatingNavBar(
 
 @Composable
 private fun NavPill(item: NavItem, selected: Boolean, onClick: () -> Unit) {
-    val container by animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-        animationSpec = Motion.defaultEffects(),
-        label = "navPillColor",
-    )
-    val width by animateDpAsState(
-        targetValue = if (selected) 132.dp else 56.dp,
+    val colors = MaterialTheme.colorScheme
+    // Satu animasi untuk lebar, latar, dan warna ikon. Interpolasi antara dua warna opak
+    // (bukan Color.Transparent) menghindari kedip gelap saat pil terpilih dianimasikan.
+    val expansion by animateFloatAsState(
+        targetValue = if (selected) 1f else 0f,
         animationSpec = Motion.defaultSpatial(),
-        label = "navPillWidth",
+        label = "navPillExpansion",
     )
-    val tint = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+    val container = lerp(colors.surfaceContainerHigh, colors.primaryContainer, expansion)
+    val tint = lerp(colors.onSurfaceVariant, colors.onPrimaryContainer, expansion)
     Row(
         modifier = Modifier
             .height(56.dp)
-            .width(width)
+            .width((56 + 76 * expansion).dp)
             .clip(RoundedCornerShape(28.dp))
             .background(container)
             .clickable(role = Role.Tab, onClick = onClick),
@@ -373,9 +402,21 @@ private fun NavPill(item: NavItem, selected: Boolean, onClick: () -> Unit) {
         horizontalArrangement = Arrangement.Center,
     ) {
         Icon(imageVector = item.icon, contentDescription = item.label, tint = tint, modifier = Modifier.size(24.dp))
-        if (selected) {
-            Spacer(Modifier.width(8.dp))
-            Text(text = item.label, color = tint, style = MaterialTheme.typography.labelLarge, maxLines = 1)
+        AnimatedVisibility(
+            visible = selected,
+            enter = expandHorizontally(animationSpec = Motion.defaultSpatial()) + fadeIn(animationSpec = Motion.fastEffects()),
+            exit = shrinkHorizontally(animationSpec = Motion.defaultSpatial()) + fadeOut(animationSpec = Motion.fastEffects()),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = item.label,
+                    color = tint,
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 1,
+                    softWrap = false,
+                )
+            }
         }
     }
 }

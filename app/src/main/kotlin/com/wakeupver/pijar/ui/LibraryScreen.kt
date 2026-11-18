@@ -29,9 +29,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.LoadingIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -96,8 +94,9 @@ fun LibraryScreen(
     )
 
     Column(modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection)) {
-        LargeTopAppBar(
-            title = { Text(stringResource(R.string.library_title)) },
+        PijarTopBar(
+            title = stringResource(R.string.library_title),
+            scrollBehavior = scrollBehavior,
             actions = {
                 if (scanning.isNotEmpty()) {
                     LoadingIndicator(modifier = Modifier.size(36.dp))
@@ -111,11 +110,6 @@ fun LibraryScreen(
                     }
                 }
             },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent,
-                scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-            ),
-            scrollBehavior = scrollBehavior,
         )
 
         LazyRow(

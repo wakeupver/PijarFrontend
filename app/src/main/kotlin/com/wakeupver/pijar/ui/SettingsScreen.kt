@@ -26,7 +26,6 @@ import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -46,7 +45,7 @@ import androidx.compose.ui.unit.dp
 import com.wakeupver.pijar.R
 import com.wakeupver.pijar.core.AppState
 import com.wakeupver.pijar.core.PlatformCatalog
-import com.wakeupver.pijar.ui.theme.hslColor
+import com.wakeupver.pijar.ui.theme.tonalSpotAccent
 
 private val ACCENT_HUES = listOf(265, 215, 175, 140, 48, 18, 340, 300)
 
@@ -69,17 +68,14 @@ fun SettingsScreen(
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val counts = remember(state.games) { state.games.groupingBy { it.platformId }.eachCount() }
+    val swatches = remember { ACCENT_HUES.associateWith { tonalSpotAccent(it) } }
     val dynamicSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val dynamicActive = state.prefs.dynamicColor && dynamicSupported
     val transparent = ListItemDefaults.colors(containerColor = Color.Transparent)
 
     Column(modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection)) {
-        LargeTopAppBar(
-            title = { Text(stringResource(R.string.settings_title)) },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent,
-                scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-            ),
+        PijarTopBar(
+            title = stringResource(R.string.settings_title),
             scrollBehavior = scrollBehavior,
         )
         LazyColumn(
@@ -169,7 +165,7 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             ACCENT_HUES.forEach { hue ->
-                                val swatch = hslColor(hue.toFloat(), 0.62f, 0.52f)
+                                val (swatch, onSwatch) = swatches.getValue(hue)
                                 Box(
                                     modifier = Modifier
                                         .size(40.dp)
@@ -179,7 +175,7 @@ fun SettingsScreen(
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     if (state.prefs.accentHue == hue) {
-                                        Icon(Icons.Rounded.Check, contentDescription = null, tint = Color.White)
+                                        Icon(Icons.Rounded.Check, contentDescription = null, tint = onSwatch)
                                     }
                                 }
                             }
