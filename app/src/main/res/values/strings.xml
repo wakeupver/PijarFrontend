@@ -64,8 +64,6 @@
     <string name="settings_dynamic_color">Dynamic color</string>
     <string name="settings_dynamic_color_desc">Follow your wallpaper (Android 12+)</string>
     <string name="settings_accent">Accent color</string>
-    <string name="settings_wallpaper">Show wallpaper</string>
-    <string name="settings_wallpaper_desc">Let the wallpaper shine through the interface</string>
     <string name="settings_default_home">Home app</string>
     <string name="settings_default_home_on">Pijar is your home app</string>
     <string name="settings_default_home_off">Set Pijar as your home app</string>

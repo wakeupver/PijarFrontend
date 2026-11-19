@@ -64,8 +64,6 @@
     <string name="settings_dynamic_color">Warna dinamis</string>
     <string name="settings_dynamic_color_desc">Ikuti wallpaper (Android 12+)</string>
     <string name="settings_accent">Warna aksen</string>
-    <string name="settings_wallpaper">Tampilkan wallpaper</string>
-    <string name="settings_wallpaper_desc">Biarkan wallpaper terlihat di balik antarmuka</string>
     <string name="settings_default_home">Aplikasi Home</string>
     <string name="settings_default_home_on">Pijar sedang menjadi aplikasi Home</string>
     <string name="settings_default_home_off">Jadikan Pijar aplikasi Home</string>

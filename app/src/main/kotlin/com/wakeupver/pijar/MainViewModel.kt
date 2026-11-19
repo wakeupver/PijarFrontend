@@ -124,8 +124,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setAccentHue(hue: Int) = repo.setPrefs { it.copy(accentHue = hue) }
 
-    fun setShowWallpaper(show: Boolean) = repo.setPrefs { it.copy(showWallpaper = show) }
-
     fun notifyFolderUnsupported() = say(R.string.msg_folder_unsupported)
 
     fun notifyImportFailed(reason: String) = say(R.string.msg_import_failed, reason)

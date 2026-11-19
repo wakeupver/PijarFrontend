@@ -62,7 +62,6 @@ fun SettingsScreen(
     onImport: () -> Unit,
     onDynamicColor: (Boolean) -> Unit,
     onAccent: (Int) -> Unit,
-    onWallpaper: (Boolean) -> Unit,
     onRequestHome: () -> Unit,
     onRequestStorage: () -> Unit,
     contentPadding: PaddingValues,
@@ -187,17 +186,6 @@ fun SettingsScreen(
                     }
                 }
             }
-            item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.settings_wallpaper)) },
-                    supportingContent = { Text(stringResource(R.string.settings_wallpaper_desc)) },
-                    trailingContent = {
-                        Switch(checked = state.prefs.showWallpaper, onCheckedChange = onWallpaper)
-                    },
-                    colors = transparent,
-                )
-            }
-
             item { SettingsSection(stringResource(R.string.settings_section_system)) }
             item {
                 ListItem(

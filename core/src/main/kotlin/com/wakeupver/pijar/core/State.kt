@@ -24,7 +24,6 @@ data class UiPrefs(
     val dynamicColor: Boolean = true,
     /** Hue aksen (0..359) saat warna dinamis mati. */
     val accentHue: Int = 265,
-    val showWallpaper: Boolean = true,
 )
 
 data class AppState(
@@ -43,7 +42,6 @@ object StateCodec {
             "prefs" to linkedMapOf<String, Any?>(
                 "dynamicColor" to state.prefs.dynamicColor,
                 "accentHue" to state.prefs.accentHue,
-                "showWallpaper" to state.prefs.showWallpaper,
             ),
             "platforms" to state.platforms.map {
                 linkedMapOf<String, Any?>(
@@ -79,7 +77,6 @@ object StateCodec {
             UiPrefs(
                 dynamicColor = p.bool("dynamicColor", true),
                 accentHue = p.int("accentHue", 265).coerceIn(0, 359),
-                showWallpaper = p.bool("showWallpaper", true),
             )
         }
         val platforms = root.objects("platforms").mapNotNull { o ->

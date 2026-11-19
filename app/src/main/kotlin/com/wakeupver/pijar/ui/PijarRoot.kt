@@ -122,11 +122,10 @@ fun PijarRoot(vm: MainViewModel) {
         )
     }
     val onSelectTab: (Int) -> Unit = remember { { tab = it } }
-    val scrimAlpha = if (state.prefs.showWallpaper) 0.88f else 1f
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = scrimAlpha),
+        color = MaterialTheme.colorScheme.surface,
     ) {
         Scaffold(
             containerColor = Color.Transparent,
@@ -207,7 +206,6 @@ fun PijarRoot(vm: MainViewModel) {
                         },
                         onDynamicColor = { enabled -> vm.setDynamicColor(enabled) },
                         onAccent = { hue -> vm.setAccentHue(hue) },
-                        onWallpaper = { show -> vm.setShowWallpaper(show) },
                         onRequestHome = {
                             try {
                                 homeRequest.launch(SystemUi.homeRequestIntent(context))

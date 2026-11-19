@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Latar transparan + windowShowWallpaper: wallpaper sistem terlihat di balik antarmuka Compose. -->
     <style name="Theme.Pijar" parent="@android:style/Theme.Material.Light.NoActionBar">
-        <item name="android:windowShowWallpaper">true</item>
-        <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>

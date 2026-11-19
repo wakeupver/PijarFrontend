@@ -12,7 +12,7 @@ class StateTest {
             games = listOf(
                 GameRecord("id1", "psx", "/sdcard/ROMs/psx/A \"x\".iso", "A", 1, 2, 3, true, 4),
             ),
-            prefs = UiPrefs(dynamicColor = false, accentHue = 120, showWallpaper = false),
+            prefs = UiPrefs(dynamicColor = false, accentHue = 120),
         )
         assertEquals(state, StateCodec.decode(StateCodec.encode(state)))
     }
