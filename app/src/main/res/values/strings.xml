@@ -51,6 +51,10 @@
     <string name="game_play_count">Played %1$d times</string>
     <string name="game_scrape">Scrape metadata</string>
     <string name="game_scraping">Scraping…</string>
+    <string name="notification_channel_scrape">Metadata scraping</string>
+    <string name="notification_scrape_title">Pijar is scraping</string>
+    <string name="notification_scrape_progress">Processing %1$d of %2$d games</string>
+    <string name="notification_scrape_done">Updated %1$d of %2$d games</string>
     <string name="game_metadata_release">Released %1$s</string>
     <string name="game_metadata_genres">Genres: %1$s</string>
     <string name="game_metadata_source">Source: %1$s</string>

@@ -51,6 +51,10 @@
     <string name="game_play_count">Dimainkan %1$d kali</string>
     <string name="game_scrape">Ambil metadata</string>
     <string name="game_scraping">Mengambil data…</string>
+    <string name="notification_channel_scrape">Pengambilan metadata</string>
+    <string name="notification_scrape_title">Pijar sedang mengambil data</string>
+    <string name="notification_scrape_progress">Memproses %1$d dari %2$d game</string>
+    <string name="notification_scrape_done">%1$d dari %2$d game diperbarui</string>
     <string name="game_metadata_release">Rilis %1$s</string>
     <string name="game_metadata_genres">Genre: %1$s</string>
     <string name="game_metadata_source">Sumber: %1$s</string>

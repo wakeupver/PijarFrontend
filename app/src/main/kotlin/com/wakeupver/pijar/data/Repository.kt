@@ -18,14 +18,19 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Sumber kebenaran aplikasi: katalog platform (aset Daijishō + impor pengguna),
@@ -35,6 +40,8 @@ class Repository(private val context: Context) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val stateFile = File(context.filesDir, "state.json")
     private val userPlatformDir = File(context.filesDir, "platforms")
+    private val notifier by lazy { ScrapeNotifier(context) }
+    private val scrapePermits = Semaphore(4)
     private val lock = Any()
     private var saveJob: Job? = null
 
@@ -206,22 +213,26 @@ class Repository(private val context: Context) {
     }
 
     /** Memindai folder platform. Mengembalikan jumlah game, atau -1 bila platform/folder belum siap. */
-    suspend fun scan(platformId: String): Int = withContext(Dispatchers.IO) {
+    suspend fun scan(platformId: String, autoScrape: Boolean = true): Int = withContext(Dispatchers.IO) {
         val config = _state.value.platforms.firstOrNull { it.platformId == platformId }
         val def = _catalog.value[platformId]
         if (config == null || def == null || config.folder.isBlank()) return@withContext -1
+        val before = _state.value.games.filter { it.platformId == platformId }
+        val beforeIds = before.map { it.id }.toSet()
         _scanning.update { it + platformId }
         try {
             val files = LibraryScanner.scan(File(config.folder), Rx.ci(def.acceptedFilenameRegex))
             val now = System.currentTimeMillis()
+            val merged = LibraryMerge.merge(platformId, before, files, now)
+            val targets = merged.filter { it.id !in beforeIds || needsScrape(it) }.map { it.id }
             update { s ->
                 if (s.platforms.none { it.platformId == platformId }) {
                     s
                 } else {
-                    val merged = LibraryMerge.merge(platformId, s.games, files, now)
                     s.copy(games = s.games.filterNot { it.platformId == platformId } + merged)
                 }
             }
+            if (autoScrape && targets.isNotEmpty()) scrapeMany(targets, notify = true)
             files.size
         } finally {
             _scanning.update { it - platformId }
@@ -229,13 +240,17 @@ class Repository(private val context: Context) {
     }
 
     suspend fun scrape(gameId: String): Boolean = withContext(Dispatchers.IO) {
-        val game = _state.value.games.firstOrNull { it.id == gameId } ?: return@withContext false
+        scrapeOne(gameId)
+    }
+
+    private suspend fun scrapeOne(gameId: String): Boolean {
+        val game = _state.value.games.firstOrNull { it.id == gameId } ?: return false
         val platform = _catalog.value[game.platformId]
         val settings = _state.value.prefs.scrape
         _scraping.update { it + gameId }
         try {
             val metadata = Scraper.scrape(game, platform, settings, context.cacheDir)
-            if (!metadata.hasData) return@withContext false
+            if (!metadata.hasData) return false
             val downloaded = metadata.coverUrl.takeIf { it.isNotBlank() }
                 ?.let { CoverCache.fetch(context.filesDir, game.id, it) }
                 .orEmpty()
@@ -243,21 +258,51 @@ class Repository(private val context: Context) {
             update { s ->
                 s.copy(games = s.games.map { if (it.id == gameId) it.copy(metadata = finalMetadata) else it })
             }
-            true
+            return true
         } catch (e: Exception) {
-            false
+            return false
         } finally {
             _scraping.update { it - gameId }
         }
     }
 
-    suspend fun scrapeAll(): Pair<Int, Int> = withContext(Dispatchers.IO) {
-        val ids = _state.value.games.map { it.id }
-        var updated = 0
-        for (id in ids) {
-            if (scrape(id)) updated++
+    suspend fun scrapeAll(): Pair<Int, Int> =
+        scrapeMany(_state.value.games.map { it.id }, notify = true)
+
+    suspend fun scrapeMissing(): Pair<Int, Int> =
+        scrapeMany(_state.value.games.filter(::needsScrape).map { it.id }, notify = true)
+
+    private suspend fun scrapeMany(ids: List<String>, notify: Boolean): Pair<Int, Int> {
+        if (ids.isEmpty()) return 0 to 0
+        val progressNotifier = if (notify) notifier else null
+        progressNotifier?.start(ids.size)
+        val done = AtomicInteger(0)
+        val updated = coroutineScope {
+            ids.map { id ->
+                async(Dispatchers.IO) {
+                    scrapePermits.withPermit {
+                        val ok = try {
+                            scrapeOne(id)
+                        } catch (_: Exception) {
+                            false
+                        }
+                        val count = done.incrementAndGet()
+                        progressNotifier?.progress(count, ids.size)
+                        ok
+                    }
+                }
+            }.awaitAll().count { it }
         }
-        updated to ids.size
+        progressNotifier?.finish(updated, ids.size)
+        return updated to ids.size
+    }
+
+    private fun needsScrape(game: GameRecord): Boolean {
+        val metadata = game.metadata
+        if (!metadata.hasData) return true
+        if (metadata.coverUrl.isBlank()) return true
+        val path = metadata.coverPath
+        return path.isBlank() || !File(path).isFile
     }
 
     /** Mengimpor satu berkas platform berformat Daijishō dan menambahkannya ke daftar platform pengguna. */

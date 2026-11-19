@@ -120,10 +120,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             var total = 0
             for (config in state.value.platforms) {
-                val n = repo.scan(config.platformId)
+                val n = repo.scan(config.platformId, autoScrape = false)
                 if (n > 0) total += n
             }
             say(R.string.msg_scan_done, total)
+            val (scraped, targets) = repo.scrapeMissing()
+            if (scraped > 0) say(R.string.msg_scrape_done, scraped, targets)
         }
     }
 

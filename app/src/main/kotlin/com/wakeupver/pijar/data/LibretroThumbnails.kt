@@ -14,9 +14,18 @@ object LibretroThumbnails {
     private val IMAGE = Regex("""\.(png|jpg|jpeg|webp)$""", RegexOption.IGNORE_CASE)
     private val ILLEGAL = Regex("""[&*/:<>?|"]""")
     private val memory = HashMap<String, Entry>()
+    private val matches = HashMap<String, String?>()
 
-    @Synchronized
     fun match(system: String, fileName: String, query: String, cacheDir: File): String? {
+        val key = "$system\n$fileName\n$query"
+        val cached = synchronized(matches) { matches[key] }
+        if (cached != null) return cached
+        val result = matchUncached(system, fileName, query, cacheDir)
+        if (result != null) synchronized(matches) { matches[key] = result }
+        return result
+    }
+
+    private fun matchUncached(system: String, fileName: String, query: String, cacheDir: File): String? {
         if (system.isBlank()) return null
         val entries = names(system, cacheDir)
         if (entries.isEmpty()) return null

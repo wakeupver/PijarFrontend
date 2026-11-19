@@ -19,15 +19,47 @@ import java.util.Date
 import java.util.Locale
 
 object Scraper {
+    private const val CACHE_TTL = 10L * 60 * 1000
     private const val TGDB_ENDPOINT = "https://api.thegamesdb.net/v1/Games/ByGameName"
     private const val IGDB_TOKEN_URL = "https://id.twitch.tv/oauth2/token"
     private const val IGDB_ENDPOINT = "https://api.igdb.com/v4/games"
     private val DATE = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+    private val scrapeCache = HashMap<ScrapeKey, CachedMetadata>()
     private var cachedToken: Pair<String, Long>? = null
 
     fun scrape(game: GameRecord, platform: PlatformDef?, settings: ScrapeSettings, cacheDir: File): GameMetadata {
         val fileName = game.path.substringAfterLast('/', game.path)
         val query = GameTitles.clean(fileName).ifBlank { game.title }
+        val key = ScrapeKey(
+            query = query,
+            platformId = game.platformId,
+            libretroSystem = platform?.libretroName.orEmpty(),
+            platformName = platform?.name.orEmpty(),
+            regions = GameTitles.tags(fileName).sorted().joinToString(","),
+            sources = settings.enabledSources.sortedBy { it.name }.toSet(),
+            theGamesDbKey = settings.theGamesDbApiKey,
+            igdbClientId = settings.igdbClientId,
+            igdbClientSecret = settings.igdbClientSecret,
+        )
+        val now = System.currentTimeMillis()
+        val cached = synchronized(scrapeCache) {
+            val entry = scrapeCache[key]
+            entry?.takeIf { now - it.at < CACHE_TTL }?.data
+        }
+        val metadata = cached ?: scrapeUncached(game, platform, settings, query, fileName, cacheDir).also { fresh ->
+            synchronized(scrapeCache) { scrapeCache[key] = CachedMetadata(now, fresh) }
+        }
+        return metadata.copy(scrapedAt = now)
+    }
+
+    private fun scrapeUncached(
+        game: GameRecord,
+        platform: PlatformDef?,
+        settings: ScrapeSettings,
+        query: String,
+        fileName: String,
+        cacheDir: File,
+    ): GameMetadata {
         var result = GameMetadata()
         val now = System.currentTimeMillis()
 
@@ -169,4 +201,18 @@ object Scraper {
         coverPath = primary.coverPath.ifBlank { next.coverPath },
         scrapedAt = maxOf(primary.scrapedAt, next.scrapedAt),
     )
+
+    private data class ScrapeKey(
+        val query: String,
+        val platformId: String,
+        val libretroSystem: String,
+        val platformName: String,
+        val regions: String,
+        val sources: Set<ScrapeSource>,
+        val theGamesDbKey: String,
+        val igdbClientId: String,
+        val igdbClientSecret: String,
+    )
+
+    private data class CachedMetadata(val at: Long, val data: GameMetadata)
 }
