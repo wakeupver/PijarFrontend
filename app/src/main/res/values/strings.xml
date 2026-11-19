@@ -26,6 +26,10 @@
     <string name="action_choose_folder">Choose folder</string>
     <string name="action_remove_platform">Remove platform</string>
     <string name="action_remove_confirm">Tap again to remove</string>
+    <string name="action_choose_cover">Choose cover art</string>
+    <string name="action_choose_player">Choose player</string>
+    <string name="action_rename">Rename</string>
+    <string name="action_remove_game">Remove from library</string>
     <string name="action_close">Close</string>
     <string name="cd_rescan">Rescan</string>
     <string name="cd_clear">Clear</string>
@@ -97,6 +101,8 @@
     <string name="sheet_platform_player">Default player</string>
     <string name="sheet_platform_player_auto">Automatic</string>
     <string name="sheet_platform_games_found">%1$d games in library</string>
+    <string name="sheet_rename_title">Rename game</string>
+    <string name="sheet_rename_hint">Game name</string>
     <string name="sheet_setup_platform_title">Setup platform</string>
     <string name="sheet_setup_incomplete_hint">Choose a ROM folder and a player app, then tap Done.</string>
     <string name="sheet_choose_player_installed">%1$d installed</string>
@@ -124,4 +130,6 @@
     <string name="msg_launch_failed">Couldn\'t launch: %1$s</string>
     <string name="msg_scrape_done">Updated %1$d of %2$d games</string>
     <string name="msg_scrape_none">No metadata or cover found</string>
+    <string name="msg_cover_ok">Cover updated</string>
+    <string name="msg_cover_failed">Couldn\'t use that image</string>
 </resources>

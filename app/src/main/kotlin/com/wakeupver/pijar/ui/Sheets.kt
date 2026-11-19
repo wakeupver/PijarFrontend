@@ -25,6 +25,7 @@ import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -640,4 +641,138 @@ private fun ChoiceRow(
             }
         }
     }
+}
+
+@Composable
+fun GameActionsSheet(
+    game: GameRecord,
+    onDismiss: () -> Unit,
+    onChooseCover: () -> Unit,
+    onRename: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var confirmRemove by remember { mutableStateOf(false) }
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = MaterialTheme.shapes.large,
+    ) {
+        SheetList {
+            item(key = "title", contentType = "header") {
+                Text(
+                    text = game.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(vertical = 8.dp),
+                )
+            }
+            item(key = "cover", contentType = "action") {
+                MenuAction(title = stringResource(R.string.action_choose_cover), onClick = onChooseCover)
+            }
+            item(key = "rename", contentType = "action") {
+                MenuAction(title = stringResource(R.string.action_rename), onClick = onRename)
+            }
+            item(key = "remove", contentType = "action") {
+                MenuAction(
+                    title = stringResource(if (confirmRemove) R.string.action_remove_confirm else R.string.action_remove_game),
+                    destructive = true,
+                    onClick = { if (confirmRemove) onRemove() else confirmRemove = true },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun PlatformActionsSheet(
+    platform: PlatformDef,
+    onDismiss: () -> Unit,
+    onChoosePlayer: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var confirmRemove by remember { mutableStateOf(false) }
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = MaterialTheme.shapes.large,
+    ) {
+        SheetList {
+            item(key = "title", contentType = "header") {
+                Text(
+                    text = platform.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(vertical = 8.dp),
+                )
+            }
+            item(key = "player", contentType = "action") {
+                MenuAction(title = stringResource(R.string.action_choose_player), onClick = onChoosePlayer)
+            }
+            item(key = "remove", contentType = "action") {
+                MenuAction(
+                    title = stringResource(if (confirmRemove) R.string.action_remove_confirm else R.string.action_remove_platform),
+                    destructive = true,
+                    onClick = { if (confirmRemove) onRemove() else confirmRemove = true },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MenuAction(
+    title: String,
+    destructive: Boolean = false,
+    onClick: () -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    Surface(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.large,
+        color = if (destructive) colors.errorContainer else colors.surfaceContainerHigh,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            color = if (destructive) colors.onErrorContainer else colors.onSurface,
+            modifier = Modifier.padding(16.dp),
+        )
+    }
+}
+
+@Composable
+fun RenameGameDialog(
+    initial: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var value by remember(initial) { mutableStateOf(initial) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.sheet_rename_title)) },
+        text = {
+            OutlinedTextField(
+                value = value,
+                onValueChange = { value = it },
+                label = { Text(stringResource(R.string.sheet_rename_hint)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { if (value.isNotBlank()) onConfirm(value.trim()) }) {
+                Text(stringResource(R.string.action_done))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        },
+    )
 }

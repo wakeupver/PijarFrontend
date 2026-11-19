@@ -80,6 +80,10 @@ fun PijarRoot(vm: MainViewModel) {
     var libraryPlatform by rememberSaveable { mutableStateOf<String?>(null) }
     var gameSheetId by remember { mutableStateOf<String?>(null) }
     var platformSheetId by remember { mutableStateOf<String?>(null) }
+    var gameMenuId by remember { mutableStateOf<String?>(null) }
+    var platformMenuId by remember { mutableStateOf<String?>(null) }
+    var renameGameId by remember { mutableStateOf<String?>(null) }
+    var coverTargetId by remember { mutableStateOf<String?>(null) }
     var setupPlatformFor by remember { mutableStateOf<String?>(null) }
     var showAddPlatform by remember { mutableStateOf(false) }
     var folderTarget by remember { mutableStateOf<String?>(null) }
@@ -101,6 +105,9 @@ fun PijarRoot(vm: MainViewModel) {
             libraryPlatform = null
             gameSheetId = null
             platformSheetId = null
+            gameMenuId = null
+            platformMenuId = null
+            renameGameId = null
             setupPlatformFor = null
             showAddPlatform = false
         }
@@ -118,6 +125,11 @@ fun PijarRoot(vm: MainViewModel) {
     }
     val importPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) vm.importPlatform(uri)
+    }
+    val coverPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        val target = coverTargetId
+        coverTargetId = null
+        if (uri != null && target != null) vm.setCover(target, uri)
     }
     val homeRequest = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         isDefaultHome = SystemUi.isDefaultHome(context)
@@ -182,6 +194,8 @@ fun PijarRoot(vm: MainViewModel) {
                             tab = TAB_LIBRARY
                         },
                         onOpenGame = { game -> gameSheetId = game.id },
+                        onLongOpenPlatform = { id -> platformMenuId = id },
+                        onLongOpenGame = { game -> gameMenuId = game.id },
                         onPlay = { game -> vm.play(context, game) },
                         onAddPlatform = { showAddPlatform = true },
                         onGrantStorage = { SystemUi.openSafely(context, Storage.allFilesAccessIntent(context)) },
@@ -194,6 +208,8 @@ fun PijarRoot(vm: MainViewModel) {
                         selectedPlatform = libraryPlatform,
                         onSelectPlatform = { id -> libraryPlatform = id },
                         onOpenGame = { game -> gameSheetId = game.id },
+                        onLongOpenPlatform = { id -> platformMenuId = id },
+                        onLongOpenGame = { game -> gameMenuId = game.id },
                         onAddPlatform = { showAddPlatform = true },
                         onPlatformSettings = openPlatformSettings,
                         onRescan = { id ->
@@ -219,6 +235,7 @@ fun PijarRoot(vm: MainViewModel) {
                         isDefaultHome = isDefaultHome,
                         storageGranted = storageGranted,
                         onOpenPlatform = openPlatformSettings,
+                        onLongOpenPlatform = { id -> platformMenuId = id },
                         onAddPlatform = { showAddPlatform = true },
                         onRescanAll = { vm.scanAll() },
                         onImport = {
@@ -261,6 +278,63 @@ fun PijarRoot(vm: MainViewModel) {
                 onScrape = { vm.scrape(sheetGame.id) },
                 onToggleFavorite = { vm.toggleFavorite(sheetGame.id) },
                 onSelectPlayer = { key -> vm.setPlayer(sheetGame.platformId, key) },
+            )
+        }
+
+        val menuGame = gameMenuId?.let { id -> state.games.firstOrNull { it.id == id } }
+        if (menuGame != null) {
+            GameActionsSheet(
+                game = menuGame,
+                onDismiss = { gameMenuId = null },
+                onChooseCover = {
+                    coverTargetId = menuGame.id
+                    gameMenuId = null
+                    try {
+                        coverPicker.launch("image/*")
+                    } catch (e: ActivityNotFoundException) {
+                        coverTargetId = null
+                        vm.notifyCoverFailed()
+                    }
+                },
+                onRename = {
+                    renameGameId = menuGame.id
+                    gameMenuId = null
+                },
+                onRemove = {
+                    vm.removeGame(menuGame.id)
+                    if (gameSheetId == menuGame.id) gameSheetId = null
+                    gameMenuId = null
+                },
+            )
+        }
+
+        val renameGame = renameGameId?.let { id -> state.games.firstOrNull { it.id == id } }
+        if (renameGame != null) {
+            RenameGameDialog(
+                initial = renameGame.title,
+                onDismiss = { renameGameId = null },
+                onConfirm = { title ->
+                    vm.renameGame(renameGame.id, title)
+                    renameGameId = null
+                },
+            )
+        }
+
+        val menuPlatform = platformMenuId?.let { catalog[it] }
+        if (menuPlatform != null) {
+            PlatformActionsSheet(
+                platform = menuPlatform,
+                onDismiss = { platformMenuId = null },
+                onChoosePlayer = {
+                    platformMenuId = null
+                    openPlatformSettings(menuPlatform.uniqueId)
+                },
+                onRemove = {
+                    vm.removePlatform(menuPlatform.uniqueId)
+                    if (libraryPlatform == menuPlatform.uniqueId) libraryPlatform = null
+                    if (platformSheetId == menuPlatform.uniqueId) platformSheetId = null
+                    platformMenuId = null
+                },
             )
         }
 

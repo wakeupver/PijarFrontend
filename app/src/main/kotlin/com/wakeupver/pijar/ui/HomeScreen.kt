@@ -4,7 +4,7 @@ package com.wakeupver.pijar.ui
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,6 +51,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -73,11 +75,14 @@ fun HomeScreen(
     storageGranted: Boolean,
     onOpenPlatform: (String) -> Unit,
     onOpenGame: (GameRecord) -> Unit,
+    onLongOpenPlatform: (String) -> Unit,
+    onLongOpenGame: (GameRecord) -> Unit,
     onPlay: (GameRecord) -> Unit,
     onAddPlatform: () -> Unit,
     onGrantStorage: () -> Unit,
     contentPadding: PaddingValues,
 ) {
+    val haptics = LocalHapticFeedback.current
     val readyConfigs = remember(state.platforms) { state.platforms.filter { it.setupDone } }
     val readyIds = remember(readyConfigs) { readyConfigs.mapTo(HashSet()) { it.platformId } }
     val platforms = remember(readyConfigs, catalog) { readyConfigs.mapNotNull { catalog[it.platformId] } }
@@ -163,7 +168,9 @@ fun HomeScreen(
                             PlatformCard(
                                 def = def,
                                 count = counts[def.uniqueId] ?: 0,
+                                haptics = haptics,
                                 onClick = { onOpenPlatform(def.uniqueId) },
+                                onLongClick = { onLongOpenPlatform(def.uniqueId) },
                                 modifier = Modifier.maskClip(MaterialTheme.shapes.extraLarge),
                             )
                         }
@@ -178,6 +185,7 @@ fun HomeScreen(
                         catalog = catalog,
                         edge = edge,
                         onOpen = onOpenGame,
+                        onLongOpen = onLongOpenGame,
                     )
                 }
             }
@@ -189,6 +197,7 @@ fun HomeScreen(
                         catalog = catalog,
                         edge = edge,
                         onOpen = onOpenGame,
+                        onLongOpen = onLongOpenGame,
                     )
                 }
             }
@@ -290,11 +299,29 @@ private fun HeroCard(game: GameRecord, platform: PlatformDef?, edge: Dp, onOpen:
 }
 
 @Composable
-private fun PlatformCard(def: PlatformDef, count: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun PlatformCard(
+    def: PlatformDef,
+    count: Int,
+    haptics: HapticFeedback,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val colors = badgeColors(def.uniqueId)
     val decoShape = PlatformShapes.forKey(def.uniqueId + "#deco").toShape()
     val badge = remember(def.shortName) { def.shortName.uppercase().take(6) }
-    Box(modifier = modifier.fillMaxSize().background(colors.first).clickable(onClick = onClick)) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(colors.first)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onLongClick()
+                },
+            ),
+    ) {
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -334,6 +361,7 @@ private fun GameShelf(
     catalog: PlatformCatalog,
     edge: Dp,
     onOpen: (GameRecord) -> Unit,
+    onLongOpen: (GameRecord) -> Unit,
 ) {
     // Jendela rak = lebar teks judul. Sudut atasnya mengikuti sudut sampul game (shapes.large), jadi sampul yang
     // terpotong di margin tetap terlihat membulat; judul di bawah sampul dipotong lurus.
@@ -351,7 +379,7 @@ private fun GameShelf(
                     platform = catalog[game.platformId],
                     haptics = haptics,
                     onClick = { onOpen(game) },
-                    onLongClick = { onOpen(game) },
+                    onLongClick = { onLongOpen(game) },
                     modifier = Modifier.width(ShelfCardWidth),
                 )
             }

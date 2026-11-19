@@ -3,6 +3,7 @@
 package com.wakeupver.pijar.ui
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,7 +45,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -61,6 +64,8 @@ fun LibraryScreen(
     selectedPlatform: String?,
     onSelectPlatform: (String?) -> Unit,
     onOpenGame: (GameRecord) -> Unit,
+    onLongOpenPlatform: (String) -> Unit,
+    onLongOpenGame: (GameRecord) -> Unit,
     onAddPlatform: () -> Unit,
     onPlatformSettings: (String) -> Unit,
     onRescan: (String?) -> Unit,
@@ -144,11 +149,22 @@ fun LibraryScreen(
             }
             items(platforms, key = { it.uniqueId }, contentType = { "platform" }) { def ->
                 val chipLabel = remember(def.shortName) { def.shortName.uppercase() }
-                FilterChip(
-                    selected = selectedPlatform == def.uniqueId,
-                    onClick = { onSelectPlatform(def.uniqueId) },
-                    label = { Text(chipLabel) },
-                )
+                Box(
+                    modifier = Modifier.pointerInput(def.uniqueId) {
+                        detectTapGestures(
+                            onLongPress = {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onLongOpenPlatform(def.uniqueId)
+                            },
+                        )
+                    },
+                ) {
+                    FilterChip(
+                        selected = selectedPlatform == def.uniqueId,
+                        onClick = { onSelectPlatform(def.uniqueId) },
+                        label = { Text(chipLabel) },
+                    )
+                }
             }
             item {
                 AssistChip(
@@ -221,7 +237,7 @@ fun LibraryScreen(
                         platform = catalog[game.platformId],
                         haptics = haptics,
                         onClick = { onOpenGame(game) },
-                        onLongClick = { onOpenGame(game) },
+                        onLongClick = { onLongOpenGame(game) },
                     )
                 }
             }

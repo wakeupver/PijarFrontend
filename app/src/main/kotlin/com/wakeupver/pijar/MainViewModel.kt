@@ -14,6 +14,7 @@ import com.wakeupver.pijar.core.PlayerPicker
 import com.wakeupver.pijar.core.UiPrefs
 import com.wakeupver.pijar.data.AppEntry
 import com.wakeupver.pijar.data.Apps
+import com.wakeupver.pijar.data.CoverCache
 import com.wakeupver.pijar.data.Repository
 import com.wakeupver.pijar.data.Storage
 import com.wakeupver.pijar.launch.GameLauncher
@@ -146,6 +147,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun toggleFavorite(gameId: String) = repo.toggleFavorite(gameId)
+
+    fun renameGame(gameId: String, title: String) {
+        val trimmed = title.trim()
+        if (trimmed.isNotBlank()) repo.renameGame(gameId, trimmed)
+    }
+
+    fun removeGame(gameId: String) = repo.removeGame(gameId)
+
+    fun setCover(gameId: String, uri: Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val path = CoverCache.save(getApplication(), gameId, uri)
+            if (path == null) {
+                say(R.string.msg_cover_failed)
+            } else {
+                repo.setCover(gameId, path)
+                say(R.string.msg_cover_ok)
+            }
+        }
+    }
+
+    fun notifyCoverFailed() = say(R.string.msg_cover_failed)
 
     fun setDynamicColor(enabled: Boolean) = repo.setPrefs { it.copy(dynamicColor = enabled) }
 

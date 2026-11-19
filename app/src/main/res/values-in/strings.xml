@@ -26,6 +26,10 @@
     <string name="action_choose_folder">Pilih folder</string>
     <string name="action_remove_platform">Hapus platform</string>
     <string name="action_remove_confirm">Ketuk lagi untuk menghapus</string>
+    <string name="action_choose_cover">Pilih sampul</string>
+    <string name="action_choose_player">Pilih pemutar</string>
+    <string name="action_rename">Ganti nama</string>
+    <string name="action_remove_game">Hapus dari pustaka</string>
     <string name="action_close">Tutup</string>
     <string name="cd_rescan">Pindai ulang</string>
     <string name="cd_clear">Bersihkan</string>
@@ -97,6 +101,8 @@
     <string name="sheet_platform_player">Pemutar bawaan</string>
     <string name="sheet_platform_player_auto">Otomatis</string>
     <string name="sheet_platform_games_found">%1$d game di pustaka</string>
+    <string name="sheet_rename_title">Ganti nama game</string>
+    <string name="sheet_rename_hint">Nama game</string>
     <string name="sheet_setup_platform_title">Setup platform</string>
     <string name="sheet_setup_incomplete_hint">Pilih folder ROM dan aplikasi pemutar, lalu ketuk Selesai.</string>
     <string name="sheet_choose_player_installed">%1$d terpasang</string>
@@ -124,4 +130,6 @@
     <string name="msg_launch_failed">Gagal meluncurkan: %1$s</string>
     <string name="msg_scrape_done">%1$d dari %2$d game diperbarui</string>
     <string name="msg_scrape_none">Metadata atau sampul tidak ditemukan</string>
+    <string name="msg_cover_ok">Sampul diperbarui</string>
+    <string name="msg_cover_failed">Gambar itu tidak bisa dipakai</string>
 </resources>

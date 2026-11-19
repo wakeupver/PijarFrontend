@@ -191,6 +191,30 @@ class Repository(private val context: Context) {
         s.copy(games = s.games.map { if (it.id == gameId) it.copy(favorite = !it.favorite) else it })
     }
 
+    fun renameGame(gameId: String, title: String) = update { s ->
+        s.copy(games = s.games.map { if (it.id == gameId) it.copy(title = title) else it })
+    }
+
+    fun setCover(gameId: String, coverPath: String) = update { s ->
+        s.copy(
+            games = s.games.map {
+                if (it.id == gameId) it.copy(metadata = it.metadata.copy(coverPath = coverPath, coverUrl = "")) else it
+            },
+        )
+    }
+
+    fun removeGame(gameId: String) {
+        val game = _state.value.games.firstOrNull { it.id == gameId }
+        update { s -> s.copy(games = s.games.filterNot { it.id == gameId }) }
+        if (game != null) {
+            runCatching {
+                val dir = File(context.filesDir, "covers").canonicalPath
+                val cover = File(game.metadata.coverPath).canonicalPath
+                if (cover.startsWith(dir + File.separator)) File(cover).delete()
+            }
+        }
+    }
+
     fun markPlayed(gameId: String) = update { s ->
         val now = System.currentTimeMillis()
         s.copy(games = s.games.map { if (it.id == gameId) it.copy(lastPlayedAt = now, playCount = it.playCount + 1) else it })

@@ -6,6 +6,7 @@ import android.os.Build
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,7 +41,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.wakeupver.pijar.R
@@ -57,6 +61,7 @@ fun SettingsScreen(
     isDefaultHome: Boolean,
     storageGranted: Boolean,
     onOpenPlatform: (String) -> Unit,
+    onLongOpenPlatform: (String) -> Unit,
     onAddPlatform: () -> Unit,
     onRescanAll: () -> Unit,
     onImport: () -> Unit,
@@ -69,6 +74,7 @@ fun SettingsScreen(
     contentPadding: PaddingValues,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val haptics = LocalHapticFeedback.current
     val counts = remember(state.games) { state.games.groupingBy { it.platformId }.eachCount() }
     val swatches = remember { ACCENT_HUES.associateWith { tonalSpotAccent(it) } }
     val dynamicSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
@@ -112,7 +118,16 @@ fun SettingsScreen(
                             )
                         },
                         colors = transparent,
-                        modifier = Modifier.clickable { onOpenPlatform(def.uniqueId) },
+                        modifier = Modifier
+                            .pointerInput(def.uniqueId) {
+                                detectTapGestures(
+                                    onLongPress = {
+                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        onLongOpenPlatform(def.uniqueId)
+                                    },
+                                )
+                            }
+                            .clickable { onOpenPlatform(def.uniqueId) },
                     )
                 }
             }
