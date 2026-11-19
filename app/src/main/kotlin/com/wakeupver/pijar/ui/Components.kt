@@ -255,7 +255,7 @@ fun ExpressiveButton(
     val pressed by source.collectIsPressedAsState()
     val radius by animateDpAsState(
         targetValue = when {
-            pill -> 28.dp
+            pill -> if (pressed) 14.dp else 28.dp
             pressed -> 10.dp
             else -> 18.dp
         },
