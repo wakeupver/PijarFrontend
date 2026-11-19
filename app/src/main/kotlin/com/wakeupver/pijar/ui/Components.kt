@@ -65,7 +65,6 @@ import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.layout.matchParentSize
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
@@ -203,7 +202,7 @@ fun GameArt(game: GameRecord, platform: PlatformDef?, modifier: Modifier = Modif
             PlatformBadge(shortName = platform?.shortName ?: "?", key = game.platformId, size = badgeSize)
         }
         Box(
-            modifier = Modifier.matchParentSize().background(
+            modifier = Modifier.fillMaxSize().background(
                 Brush.verticalGradient(
                     colors = listOf(
                         colors.primary.copy(alpha = 0.18f),
@@ -215,7 +214,7 @@ fun GameArt(game: GameRecord, platform: PlatformDef?, modifier: Modifier = Modif
         )
         Box(
             modifier = Modifier
-                .matchParentSize()
+                .fillMaxSize()
                 .border(1.dp, colors.onSurface.copy(alpha = 0.10f), shape),
         )
     }
