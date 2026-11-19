@@ -250,7 +250,7 @@ fun ExpressiveButton(
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
     val radius by animateDpAsState(
-        targetValue = if (pressed) 12.dp else 24.dp,
+        targetValue = if (pressed) 10.dp else 18.dp,
         animationSpec = ButtonRadiusSpec,
         label = "buttonRadius",
     )
@@ -369,15 +369,15 @@ data class NavItem(val label: String, val icon: ImageVector)
 private val ButtonRadiusSpec: FiniteAnimationSpec<Dp> = Motion.fastSpatial<Dp>()
 private val NavPillExpansionSpec: FiniteAnimationSpec<Float> = Motion.defaultSpatial<Float>()
 private val NavPillFadeSpec: FiniteAnimationSpec<Float> = Motion.fastEffects<Float>()
-private val NavPillShape = RoundedCornerShape(24.dp)
-private val NavBarShape = RoundedCornerShape(32.dp)
+private val NavPillShape = RoundedCornerShape(16.dp)
+private val NavBarShape = RoundedCornerShape(24.dp)
 private val NavPillHeight = 56.dp
 private val NavPillCollapsedWidth = 56.dp
 private val NavPillExpandedWidth = 132.dp
 private val NavPillIconSize = 24.dp
 private val NavPillLabelGap = 8.dp
 
-/** Bilah navigasi melayang berbentuk pil; item terpilih melebar dan menampilkan label. */
+/** Bilah navigasi melayang bersudut membulat; item terpilih melebar dan menampilkan label. */
 @Composable
 fun FloatingNavBar(
     items: List<NavItem>,
