@@ -17,6 +17,7 @@ import com.wakeupver.pijar.R
 class ScrapeNotifier(context: Context) {
     private val app = context.applicationContext
     private val manager = NotificationManagerCompat.from(app)
+    private var lastPostAt = 0L
 
     init {
         createChannel()
@@ -24,6 +25,7 @@ class ScrapeNotifier(context: Context) {
 
     @Synchronized
     fun start(total: Int) {
+        lastPostAt = System.currentTimeMillis()
         val text = if (total > 0) {
             app.getString(R.string.notification_scrape_progress, 0, total)
         } else {
@@ -34,6 +36,9 @@ class ScrapeNotifier(context: Context) {
 
     @Synchronized
     fun progress(done: Int, total: Int) {
+        val now = System.currentTimeMillis()
+        if (done < total && now - lastPostAt < PROGRESS_INTERVAL_MS) return
+        lastPostAt = now
         val text = if (total > 0) {
             app.getString(R.string.notification_scrape_progress, done, total)
         } else {
@@ -44,6 +49,7 @@ class ScrapeNotifier(context: Context) {
 
     @Synchronized
     fun finish(updated: Int, total: Int) {
+        lastPostAt = 0L
         val text = app.getString(R.string.notification_scrape_done, updated, total)
         post(total = 0, done = 0, text = text, ongoing = false, autoCancel = true, indeterminate = false)
     }
@@ -108,5 +114,6 @@ class ScrapeNotifier(context: Context) {
     private companion object {
         const val CHANNEL_ID = "scrape"
         const val NOTIFICATION_ID = 2401
+        const val PROGRESS_INTERVAL_MS = 300L
     }
 }

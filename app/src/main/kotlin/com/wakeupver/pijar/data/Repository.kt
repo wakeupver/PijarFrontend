@@ -42,7 +42,7 @@ class Repository(private val context: Context) {
     private val stateFile = File(context.filesDir, "state.json")
     private val userPlatformDir = File(context.filesDir, "platforms")
     private val notifier by lazy { ScrapeNotifier(context) }
-    private val scrapePermits = Semaphore(4)
+    private val scrapePermits = Semaphore(8)
     private val lock = Any()
     private var saveJob: Job? = null
 
@@ -216,7 +216,7 @@ class Repository(private val context: Context) {
                     s.copy(games = s.games.filterNot { it.platformId == platformId } + merged)
                 }
             }
-            if (autoScrape && targets.isNotEmpty()) scrapeMany(targets, notify = true)
+            if (autoScrape && targets.isNotEmpty()) scrapeMany(targets, notify = true, force = false)
             files.size
         } finally {
             _scanning.update { it - platformId }
@@ -224,11 +224,12 @@ class Repository(private val context: Context) {
     }
 
     suspend fun scrape(gameId: String): Boolean = withContext(Dispatchers.IO) {
-        scrapeOne(gameId)
+        scrapeOne(gameId, force = true)
     }
 
-    private suspend fun scrapeOne(gameId: String): Boolean {
+    private suspend fun scrapeOne(gameId: String, force: Boolean): Boolean {
         val game = _state.value.games.firstOrNull { it.id == gameId } ?: return false
+        if (!force && !needsScrape(game)) return true
         val platform = _catalog.value[game.platformId]
         _scraping.update { it + gameId }
         try {
@@ -250,12 +251,12 @@ class Repository(private val context: Context) {
     }
 
     suspend fun scrapeAll(): Pair<Int, Int> =
-        scrapeMany(_state.value.games.map { it.id }, notify = true)
+        scrapeMany(_state.value.games.map { it.id }, notify = true, force = false)
 
     suspend fun scrapeMissing(): Pair<Int, Int> =
-        scrapeMany(_state.value.games.filter(::needsScrape).map { it.id }, notify = true)
+        scrapeMany(_state.value.games.filter(::needsScrape).map { it.id }, notify = true, force = true)
 
-    private suspend fun scrapeMany(ids: List<String>, notify: Boolean): Pair<Int, Int> {
+    private suspend fun scrapeMany(ids: List<String>, notify: Boolean, force: Boolean): Pair<Int, Int> {
         if (ids.isEmpty()) return 0 to 0
         val progressNotifier = if (notify) notifier else null
         progressNotifier?.start(ids.size)
@@ -265,7 +266,7 @@ class Repository(private val context: Context) {
                 async(Dispatchers.IO) {
                     scrapePermits.withPermit {
                         val ok = try {
-                            scrapeOne(id)
+                            scrapeOne(id, force)
                         } catch (_: Exception) {
                             false
                         }
