@@ -8,6 +8,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -23,9 +24,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Favorite
@@ -52,6 +55,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
@@ -181,9 +185,10 @@ fun GameArt(game: GameRecord, platform: PlatformDef?, modifier: Modifier = Modif
             ?: withContext(Dispatchers.IO) { ArtFinder.find(game.path) }
             ?: game.metadata.coverUrl.takeIf { it.isNotBlank() }
     }
-    val colors = badgeColors(game.platformId)
+    val colors = MaterialTheme.colorScheme
+    val shape = MaterialTheme.shapes.large
     Box(
-        modifier = modifier.clip(MaterialTheme.shapes.large).background(colors.first.copy(alpha = 0.55f)),
+        modifier = modifier.clip(shape).background(colors.surfaceContainerHighest),
         contentAlignment = Alignment.Center,
     ) {
         val file = art
@@ -197,6 +202,22 @@ fun GameArt(game: GameRecord, platform: PlatformDef?, modifier: Modifier = Modif
         } else {
             PlatformBadge(shortName = platform?.shortName ?: "?", key = game.platformId, size = badgeSize)
         }
+        Box(
+            modifier = Modifier.matchParentSize().background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        colors.primary.copy(alpha = 0.18f),
+                        Color.Transparent,
+                        colors.tertiary.copy(alpha = 0.14f),
+                    ),
+                ),
+            ),
+        )
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .border(1.dp, colors.onSurface.copy(alpha = 0.10f), shape),
+        )
     }
 }
 
@@ -212,7 +233,10 @@ fun GameCard(
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        tonalElevation = 1.dp,
         modifier = modifier.combinedClickable(
             onClick = onClick,
             onLongClick = {
@@ -221,24 +245,32 @@ fun GameCard(
             },
         ),
     ) {
-        Box {
-            GameArt(game = game, platform = platform, modifier = Modifier.fillMaxWidth().aspectRatio(GameArtAspectRatio))
-            if (game.favorite) {
-                Icon(
-                    imageVector = Icons.Rounded.Favorite,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(20.dp),
-                )
+        Column(modifier = Modifier.padding(4.dp)) {
+            Box {
+                GameArt(game = game, platform = platform, modifier = Modifier.fillMaxWidth().aspectRatio(GameArtAspectRatio))
+                if (game.favorite) {
+                    Icon(
+                        imageVector = Icons.Rounded.Favorite,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f), CircleShape)
+                            .padding(4.dp)
+                            .size(16.dp),
+                    )
+                }
             }
+            Text(
+                text = game.title,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+            )
         }
-        Text(
-            text = game.title,
-            style = MaterialTheme.typography.labelLarge,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp),
-        )
     }
 }
 
