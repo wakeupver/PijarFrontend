@@ -84,10 +84,12 @@ fun HomeScreen(
         state.games.filter { it.favorite }.sortedBy { it.title.lowercase() }.take(20)
     }
 
-    // Jangan taruh kartu yang bisa digeser di bawah zona gestur "kembali" sistem di tepi layar.
+    // Satu margin horizontal untuk seluruh isi Beranda (judul, kartu, carousel, rak) supaya tepinya sejajar.
+    // Dasarnya 24dp, sama dengan padding teks judul. Naik hanya bila zona gestur "kembali" sistem lebih lebar,
+    // agar kartu yang bisa digeser tidak berada di bawah zona gestur di tepi layar.
     val layoutDirection = LocalLayoutDirection.current
     val gestureInsets = WindowInsets.systemGestures.asPaddingValues()
-    val edge = maxOf(20.dp, gestureInsets.calculateStartPadding(layoutDirection))
+    val edge = maxOf(24.dp, gestureInsets.calculateStartPadding(layoutDirection))
     val hero = recent.firstOrNull()
 
     LazyColumn(
@@ -95,10 +97,10 @@ fun HomeScreen(
         contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding() + 24.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        item { HomeHeader(platformCount = platforms.size, gameCount = state.games.size) }
+        item { HomeHeader(platformCount = platforms.size, gameCount = state.games.size, edge = edge) }
 
         if (!storageGranted) {
-            item { StorageBanner(onGrant = onGrantStorage) }
+            item { StorageBanner(onGrant = onGrantStorage, edge = edge) }
         }
 
         if (platforms.isEmpty()) {
@@ -116,6 +118,7 @@ fun HomeScreen(
                     HeroCard(
                         game = hero,
                         platform = catalog[hero.platformId],
+                        edge = edge,
                         onOpen = { onOpenGame(hero) },
                         onPlay = { onPlay(hero) },
                     )
@@ -125,8 +128,11 @@ fun HomeScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     SectionHeader(
                         text = stringResource(R.string.home_platforms),
+                        horizontalPadding = edge,
                         trailing = {
-                            TextButton(onClick = onAddPlatform) {
+                            // TextButton punya padding isi 12dp; geser agar teksnya berhenti di margin kanan
+                            // yang sama dengan tepi kanan carousel.
+                            TextButton(onClick = onAddPlatform, modifier = Modifier.offset(x = 12.dp)) {
                                 Text(stringResource(R.string.action_add_platform))
                             }
                         },
@@ -177,7 +183,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeHeader(platformCount: Int, gameCount: Int) {
+private fun HomeHeader(platformCount: Int, gameCount: Int, edge: Dp) {
     val hour = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
     val greeting = stringResource(
         when (hour) {
@@ -187,7 +193,7 @@ private fun HomeHeader(platformCount: Int, gameCount: Int) {
             else -> R.string.greeting_night
         },
     )
-    Column(modifier = Modifier.statusBarsPadding().padding(start = 24.dp, end = 24.dp, top = 20.dp)) {
+    Column(modifier = Modifier.statusBarsPadding().padding(start = edge, end = edge, top = 20.dp)) {
         Text(text = greeting, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         Text(text = stringResource(R.string.app_name), style = MaterialTheme.typography.displayMedium)
         Text(
@@ -199,12 +205,12 @@ private fun HomeHeader(platformCount: Int, gameCount: Int) {
 }
 
 @Composable
-private fun StorageBanner(onGrant: () -> Unit) {
+private fun StorageBanner(onGrant: () -> Unit, edge: Dp) {
     val colors = MaterialTheme.colorScheme
     Surface(
         shape = MaterialTheme.shapes.extraLarge,
         color = colors.tertiaryContainer,
-        modifier = Modifier.padding(horizontal = 20.dp).fillMaxWidth(),
+        modifier = Modifier.padding(horizontal = edge).fillMaxWidth(),
     ) {
         Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
@@ -226,13 +232,13 @@ private fun StorageBanner(onGrant: () -> Unit) {
 }
 
 @Composable
-private fun HeroCard(game: GameRecord, platform: PlatformDef?, onOpen: () -> Unit, onPlay: () -> Unit) {
+private fun HeroCard(game: GameRecord, platform: PlatformDef?, edge: Dp, onOpen: () -> Unit, onPlay: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Surface(
         onClick = onOpen,
         shape = MaterialTheme.shapes.extraLarge,
         color = colors.primaryContainer,
-        modifier = Modifier.padding(horizontal = 20.dp).fillMaxWidth(),
+        modifier = Modifier.padding(horizontal = edge).fillMaxWidth(),
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             GameArt(game = game, platform = platform, modifier = Modifier.size(116.dp), badgeSize = 72.dp)
@@ -314,7 +320,7 @@ private fun GameShelf(
     onOpen: (GameRecord) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionHeader(text = title)
+        SectionHeader(text = title, horizontalPadding = edge)
         LazyRow(
             contentPadding = PaddingValues(horizontal = edge),
             horizontalArrangement = Arrangement.spacedBy(12.dp),

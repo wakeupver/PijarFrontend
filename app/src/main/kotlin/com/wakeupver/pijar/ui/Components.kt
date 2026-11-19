@@ -304,9 +304,14 @@ fun PijarTopBar(
 }
 
 @Composable
-fun SectionHeader(text: String, modifier: Modifier = Modifier, trailing: (@Composable () -> Unit)? = null) {
+fun SectionHeader(
+    text: String,
+    modifier: Modifier = Modifier,
+    horizontalPadding: Dp = 24.dp,
+    trailing: (@Composable () -> Unit)? = null,
+) {
     Row(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 24.dp),
+        modifier = modifier.fillMaxWidth().padding(horizontal = horizontalPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(text = text, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
