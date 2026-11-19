@@ -14,10 +14,9 @@ Berkas `.dpt` dan format argumen pemutar mengikuti dokumentasi di repositori yan
 
 ## Sumber metadata & sampul
 
-Pijar dapat mengambil metadata dan sampul dari Libretro (https://libretro.com, https://thumbnails.libretro.com),
-TheGamesDB (https://thegamesdb.net), dan IGDB (https://www.igdb.com). Pijar tidak menyertakan data atau gambar
-dari layanan tersebut di dalam APK; permintaan dilakukan saat pengguna memilih scraper. Kredensial API disimpan
-lokal dan tidak dikirim ke pihak selain penyedia layanan yang bersangkutan.
+Pijar dapat mengambil metadata dan sampul dari Libretro (https://libretro.com, https://thumbnails.libretro.com).
+Pijar tidak menyertakan data atau gambar dari layanan tersebut di dalam APK; permintaan dilakukan saat pengguna
+memilih scraper.
 
 ## Pustaka
 

@@ -3,6 +3,7 @@ package com.wakeupver.pijar.core
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class StateTest {
@@ -31,7 +32,7 @@ class StateTest {
                     true,
                     4,
                     GameMetadata(
-                        source = ScrapeSource.THE_GAMES_DB,
+                        source = ScrapeSource.LIBRETRO,
                         title = "A",
                         overview = "Ringkasan",
                         releaseDate = "1995",
@@ -45,12 +46,7 @@ class StateTest {
             prefs = UiPrefs(
                 dynamicColor = false,
                 accentHue = 120,
-                scrape = ScrapeSettings(
-                    enabledSources = setOf(ScrapeSource.THE_GAMES_DB, ScrapeSource.IGDB),
-                    theGamesDbApiKey = "tgdb-key",
-                    igdbClientId = "igdb-id",
-                    igdbClientSecret = "igdb-secret",
-                ),
+                scrape = ScrapeSettings(),
             ),
         )
         assertEquals(state, StateCodec.decode(StateCodec.encode(state)))
@@ -82,9 +78,9 @@ class StateTest {
         val s = StateCodec.decode(
             """{"games":[{"id":"x","platform":"psx","path":"/a.iso","metadata":{"source":"igdb","genres":["Action"],"coverUrl":"https://example.test/x.png"}}],"prefs":{"scrape":{"enabledSources":["libretro","unknown"]}}}""",
         )
-        assertEquals(setOf(ScrapeSource.LIBRETRO), s.prefs.scrape.enabledSources)
+        assertEquals(ScrapeSettings(), s.prefs.scrape)
         val metadata = s.games.single().metadata
-        assertEquals(ScrapeSource.IGDB, metadata.source)
+        assertNull(metadata.source)
         assertEquals(listOf("Action"), metadata.genres)
         assertEquals("https://example.test/x.png", metadata.coverUrl)
         assertTrue(metadata.hasData)

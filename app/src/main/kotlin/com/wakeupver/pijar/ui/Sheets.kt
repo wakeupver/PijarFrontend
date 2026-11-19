@@ -132,11 +132,10 @@ fun GameSheet(
     val genresLabel = game.metadata.genres.takeIf { it.isNotEmpty() }
         ?.let { stringResource(R.string.game_metadata_genres, it.joinToString(", ")) }
         .orEmpty()
-    val sourceLabel = when (game.metadata.source) {
-        ScrapeSource.LIBRETRO -> stringResource(R.string.source_libretro)
-        ScrapeSource.THE_GAMES_DB -> stringResource(R.string.source_thegamesdb)
-        ScrapeSource.IGDB -> stringResource(R.string.source_igdb)
-        null -> ""
+    val sourceLabel = if (game.metadata.source == ScrapeSource.LIBRETRO) {
+        stringResource(R.string.source_libretro)
+    } else {
+        ""
     }
     val sourceText = sourceLabel.takeIf { it.isNotBlank() }
         ?.let { stringResource(R.string.game_metadata_source, it) }

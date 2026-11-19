@@ -57,12 +57,7 @@ object StateCodec {
             "prefs" to linkedMapOf<String, Any?>(
                 "dynamicColor" to state.prefs.dynamicColor,
                 "accentHue" to state.prefs.accentHue,
-                "scrape" to linkedMapOf<String, Any?>(
-                    "enabledSources" to state.prefs.scrape.enabledSources.map { it.storageName },
-                    "theGamesDbApiKey" to state.prefs.scrape.theGamesDbApiKey,
-                    "igdbClientId" to state.prefs.scrape.igdbClientId,
-                    "igdbClientSecret" to state.prefs.scrape.igdbClientSecret,
-                ),
+                "scrape" to linkedMapOf<String, Any?>(),
             ),
             "platforms" to state.platforms.map {
                 linkedMapOf<String, Any?>(
@@ -98,25 +93,10 @@ object StateCodec {
         val prefs = if (p == null) {
             UiPrefs()
         } else {
-            val s = p["scrape"].asObject()
             UiPrefs(
                 dynamicColor = p.bool("dynamicColor", true),
                 accentHue = p.int("accentHue", 265).coerceIn(0, 359),
-                scrape = if (s == null) {
-                    ScrapeSettings()
-                } else {
-                    val defaults = ScrapeSettings()
-                    ScrapeSettings(
-                        enabledSources = if (s.containsKey("enabledSources")) {
-                            strings(s, "enabledSources").mapNotNull(ScrapeSource::from).toSet()
-                        } else {
-                            defaults.enabledSources
-                        },
-                        theGamesDbApiKey = s.string("theGamesDbApiKey"),
-                        igdbClientId = s.string("igdbClientId"),
-                        igdbClientSecret = s.string("igdbClientSecret"),
-                    )
-                },
+                scrape = ScrapeSettings(),
             )
         }
         val platforms = root.objects("platforms").mapNotNull { o ->

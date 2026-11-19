@@ -11,7 +11,6 @@ import com.wakeupver.pijar.core.FileHandling
 import com.wakeupver.pijar.core.GameRecord
 import com.wakeupver.pijar.core.PlatformCatalog
 import com.wakeupver.pijar.core.PlayerPicker
-import com.wakeupver.pijar.core.ScrapeSource
 import com.wakeupver.pijar.core.UiPrefs
 import com.wakeupver.pijar.data.AppEntry
 import com.wakeupver.pijar.data.Apps
@@ -145,14 +144,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
-
-    fun setScrapeSource(source: ScrapeSource, enabled: Boolean) = repo.setScrapeSource(source, enabled)
-
-    fun setTheGamesDbApiKey(value: String) = repo.setTheGamesDbApiKey(value)
-
-    fun setIgdbClientId(value: String) = repo.setIgdbClientId(value)
-
-    fun setIgdbClientSecret(value: String) = repo.setIgdbClientSecret(value)
 
     fun toggleFavorite(gameId: String) = repo.toggleFavorite(gameId)
 

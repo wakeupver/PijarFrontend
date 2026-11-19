@@ -12,7 +12,6 @@ import com.wakeupver.pijar.core.PlatformCatalog
 import com.wakeupver.pijar.core.PlatformConfig
 import com.wakeupver.pijar.core.PlatformDef
 import com.wakeupver.pijar.core.Rx
-import com.wakeupver.pijar.core.ScrapeSource
 import com.wakeupver.pijar.core.StateCodec
 import com.wakeupver.pijar.core.UiPrefs
 import kotlinx.coroutines.CoroutineScope
@@ -188,23 +187,6 @@ class Repository(private val context: Context) {
 
     fun setPrefs(transform: (UiPrefs) -> UiPrefs) = update { s -> s.copy(prefs = transform(s.prefs)) }
 
-    fun setScrapeSource(source: ScrapeSource, enabled: Boolean) = setPrefs { prefs ->
-        val sources = if (enabled) prefs.scrape.enabledSources + source else prefs.scrape.enabledSources - source
-        prefs.copy(scrape = prefs.scrape.copy(enabledSources = sources))
-    }
-
-    fun setTheGamesDbApiKey(value: String) = setPrefs { prefs ->
-        prefs.copy(scrape = prefs.scrape.copy(theGamesDbApiKey = value.trim()))
-    }
-
-    fun setIgdbClientId(value: String) = setPrefs { prefs ->
-        prefs.copy(scrape = prefs.scrape.copy(igdbClientId = value.trim()))
-    }
-
-    fun setIgdbClientSecret(value: String) = setPrefs { prefs ->
-        prefs.copy(scrape = prefs.scrape.copy(igdbClientSecret = value.trim()))
-    }
-
     fun toggleFavorite(gameId: String) = update { s ->
         s.copy(games = s.games.map { if (it.id == gameId) it.copy(favorite = !it.favorite) else it })
     }
@@ -248,10 +230,9 @@ class Repository(private val context: Context) {
     private suspend fun scrapeOne(gameId: String): Boolean {
         val game = _state.value.games.firstOrNull { it.id == gameId } ?: return false
         val platform = _catalog.value[game.platformId]
-        val settings = _state.value.prefs.scrape
         _scraping.update { it + gameId }
         try {
-            val metadata = Scraper.scrape(game, platform, settings, context.cacheDir)
+            val metadata = Scraper.scrape(game, platform, context.cacheDir)
             if (!metadata.hasData) return false
             val downloaded = metadata.coverUrl.takeIf { it.isNotBlank() }
                 ?.let { CoverCache.fetch(context.filesDir, game.id, it) }

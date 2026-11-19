@@ -3,16 +3,10 @@ package com.wakeupver.pijar.core
 import java.text.Normalizer
 
 enum class ScrapeSource {
-    LIBRETRO,
-    THE_GAMES_DB,
-    IGDB;
+    LIBRETRO;
 
     val storageName: String
-        get() = when (this) {
-            LIBRETRO -> "libretro"
-            THE_GAMES_DB -> "thegamesdb"
-            IGDB -> "igdb"
-        }
+        get() = "libretro"
 
     companion object {
         fun from(raw: String): ScrapeSource? = entries.firstOrNull {
@@ -21,12 +15,7 @@ enum class ScrapeSource {
     }
 }
 
-data class ScrapeSettings(
-    val enabledSources: Set<ScrapeSource> = setOf(ScrapeSource.LIBRETRO, ScrapeSource.THE_GAMES_DB),
-    val theGamesDbApiKey: String = "",
-    val igdbClientId: String = "",
-    val igdbClientSecret: String = "",
-)
+data class ScrapeSettings
 
 data class GameMetadata(
     val source: ScrapeSource? = null,

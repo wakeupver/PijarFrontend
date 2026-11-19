@@ -232,10 +232,6 @@ fun PijarRoot(vm: MainViewModel) {
                         onAccent = { hue -> vm.setAccentHue(hue) },
                         isScraping = scraping.isNotEmpty(),
                         onScrapeAll = { vm.scrapeAll() },
-                        onScrapeSource = { source, enabled -> vm.setScrapeSource(source, enabled) },
-                        onTgdbKey = { value -> vm.setTheGamesDbApiKey(value) },
-                        onIgdbClientId = { value -> vm.setIgdbClientId(value) },
-                        onIgdbClientSecret = { value -> vm.setIgdbClientSecret(value) },
                         onRequestHome = {
                             try {
                                 homeRequest.launch(SystemUi.homeRequestIntent(context))
