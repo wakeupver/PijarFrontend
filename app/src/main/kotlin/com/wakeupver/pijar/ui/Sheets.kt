@@ -109,7 +109,11 @@ fun GameSheet(
     val fileSize = if (game.sizeBytes > 0L) Formatter.formatShortFileSize(context, game.sizeBytes) else ""
     val stats = listOf(lastPlayed, playCount, fileSize).filter { it.isNotEmpty() }.joinToString(" · ")
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = MaterialTheme.shapes.large,
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -213,7 +217,11 @@ fun AddPlatformSheet(
         }
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = MaterialTheme.shapes.large,
+    ) {
         Column(modifier = Modifier.fillMaxWidth().navigationBarsPadding()) {
             Text(
                 text = stringResource(R.string.sheet_add_platform_title),
@@ -226,7 +234,7 @@ fun AddPlatformSheet(
                 placeholder = { Text(stringResource(R.string.sheet_add_platform_search)) },
                 leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
                 singleLine = true,
-                shape = CircleShape,
+                shape = MaterialTheme.shapes.large,
                 colors = TextFieldDefaults.colors(
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
@@ -280,7 +288,11 @@ fun PlatformSettingsSheet(
     var folderText by remember(config.folder) { mutableStateOf(config.folder) }
     var confirmRemove by remember { mutableStateOf(false) }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = MaterialTheme.shapes.large,
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()

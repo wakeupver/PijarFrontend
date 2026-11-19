@@ -237,7 +237,7 @@ fun GameCard(
     }
 }
 
-/** Tombol "expressive": pil penuh yang bentuknya memantul menjadi kotak bulat saat ditekan. */
+/** Tombol "expressive": sudut membulat yang mengencang saat tombol ditekan. */
 @Composable
 fun ExpressiveButton(
     text: String,
@@ -250,7 +250,7 @@ fun ExpressiveButton(
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
     val radius by animateDpAsState(
-        targetValue = if (pressed) 14.dp else 28.dp,
+        targetValue = if (pressed) 12.dp else 24.dp,
         animationSpec = ButtonRadiusSpec,
         label = "buttonRadius",
     )
@@ -369,8 +369,8 @@ data class NavItem(val label: String, val icon: ImageVector)
 private val ButtonRadiusSpec: FiniteAnimationSpec<Dp> = Motion.fastSpatial<Dp>()
 private val NavPillExpansionSpec: FiniteAnimationSpec<Float> = Motion.defaultSpatial<Float>()
 private val NavPillFadeSpec: FiniteAnimationSpec<Float> = Motion.fastEffects<Float>()
-private val NavPillShape = RoundedCornerShape(28.dp)
-private val NavBarShape = RoundedCornerShape(40.dp)
+private val NavPillShape = RoundedCornerShape(24.dp)
+private val NavBarShape = RoundedCornerShape(32.dp)
 private val NavPillHeight = 56.dp
 private val NavPillCollapsedWidth = 56.dp
 private val NavPillExpandedWidth = 132.dp
