@@ -16,12 +16,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.materialkolor.dynamiccolor.ColorSpec
 import com.materialkolor.hct.Hct
 import com.materialkolor.scheme.SchemeTonalSpot
+import com.wakeupver.pijar.R
 import com.wakeupver.pijar.core.UiPrefs
 
 private val SPEC_2025 = ColorSpec.SpecVersion.SPEC_2025
@@ -142,16 +145,32 @@ val PijarShapes = Shapes(
     extraLarge = RoundedCornerShape(24.dp),
 )
 
+private val Inter = FontFamily(
+    Font(R.font.inter_variable, weight = FontWeight.Normal),
+    Font(R.font.inter_variable, weight = FontWeight.Medium),
+    Font(R.font.inter_variable, weight = FontWeight.SemiBold),
+    Font(R.font.inter_variable, weight = FontWeight.Bold),
+    Font(R.font.inter_variable, weight = FontWeight.ExtraBold),
+    Font(R.font.inter_variable, weight = FontWeight.Black),
+)
+
 val PijarTypography: Typography = Typography().let { t ->
     t.copy(
-        displayLarge = t.displayLarge.copy(fontWeight = FontWeight.Black),
-        displayMedium = t.displayMedium.copy(fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp),
-        displaySmall = t.displaySmall.copy(fontWeight = FontWeight.Black, letterSpacing = (-0.25).sp),
-        headlineLarge = t.headlineLarge.copy(fontWeight = FontWeight.ExtraBold),
-        headlineMedium = t.headlineMedium.copy(fontWeight = FontWeight.ExtraBold),
-        headlineSmall = t.headlineSmall.copy(fontWeight = FontWeight.Bold),
-        titleLarge = t.titleLarge.copy(fontWeight = FontWeight.Bold),
-        titleMedium = t.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-        labelLarge = t.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+        defaultFontFamily = Inter,
+        displayLarge = t.displayLarge.copy(fontFamily = Inter, fontWeight = FontWeight.Black),
+        displayMedium = t.displayMedium.copy(fontFamily = Inter, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp),
+        displaySmall = t.displaySmall.copy(fontFamily = Inter, fontWeight = FontWeight.Black, letterSpacing = (-0.25).sp),
+        headlineLarge = t.headlineLarge.copy(fontFamily = Inter, fontWeight = FontWeight.ExtraBold),
+        headlineMedium = t.headlineMedium.copy(fontFamily = Inter, fontWeight = FontWeight.ExtraBold),
+        headlineSmall = t.headlineSmall.copy(fontFamily = Inter, fontWeight = FontWeight.Bold),
+        titleLarge = t.titleLarge.copy(fontFamily = Inter, fontWeight = FontWeight.Bold),
+        titleMedium = t.titleMedium.copy(fontFamily = Inter, fontWeight = FontWeight.SemiBold),
+        titleSmall = t.titleSmall.copy(fontFamily = Inter),
+        bodyLarge = t.bodyLarge.copy(fontFamily = Inter),
+        bodyMedium = t.bodyMedium.copy(fontFamily = Inter),
+        bodySmall = t.bodySmall.copy(fontFamily = Inter),
+        labelLarge = t.labelLarge.copy(fontFamily = Inter, fontWeight = FontWeight.SemiBold),
+        labelMedium = t.labelMedium.copy(fontFamily = Inter),
+        labelSmall = t.labelSmall.copy(fontFamily = Inter),
     )
 }
