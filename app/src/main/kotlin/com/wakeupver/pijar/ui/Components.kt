@@ -471,12 +471,25 @@ private fun NavPillIcon(
     endColor: Color,
     expansion: State<Float>,
 ) {
-    Icon(
-        imageVector = item.icon,
-        contentDescription = item.label,
-        tint = lerp(startColor, endColor, expansion.value),
-        modifier = Modifier.size(NavPillIconSize),
-    )
+    Box(contentAlignment = Alignment.Center) {
+        Icon(
+            imageVector = item.icon,
+            contentDescription = item.label,
+            tint = startColor,
+            modifier = Modifier
+                .size(NavPillIconSize)
+                .graphicsLayer { alpha = 1f - expansion.value },
+        )
+        Icon(
+            imageVector = item.icon,
+            contentDescription = null,
+            tint = endColor,
+            modifier = Modifier
+                .size(NavPillIconSize)
+                .clearAndSetSemantics {}
+                .graphicsLayer { alpha = expansion.value },
+        )
+    }
 }
 
 @Composable
@@ -488,13 +501,26 @@ private fun NavPillLabel(
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Spacer(Modifier.width(NavPillLabelGap))
-        Text(
-            text = item.label,
-            color = lerp(startColor, endColor, expansion.value),
-            style = MaterialTheme.typography.labelLarge,
-            maxLines = 1,
-            softWrap = false,
-        )
+        Box(contentAlignment = Alignment.CenterStart) {
+            Text(
+                text = item.label,
+                color = startColor,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier.graphicsLayer { alpha = 1f - expansion.value },
+            )
+            Text(
+                text = item.label,
+                color = endColor,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier
+                    .clearAndSetSemantics {}
+                    .graphicsLayer { alpha = expansion.value },
+            )
+        }
     }
 }
 
