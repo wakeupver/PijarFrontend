@@ -237,7 +237,10 @@ fun GameCard(
     }
 }
 
-/** Tombol "expressive": sudut membulat yang mengencang saat tombol ditekan. */
+/**
+ * Tombol "expressive": sudut membulat yang mengencang saat tombol ditekan.
+ * Set [pill] = true untuk tombol play agar tetap berbentuk pil penuh.
+ */
 @Composable
 fun ExpressiveButton(
     text: String,
@@ -246,11 +249,16 @@ fun ExpressiveButton(
     icon: ImageVector? = null,
     tonal: Boolean = false,
     enabled: Boolean = true,
+    pill: Boolean = false,
 ) {
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
     val radius by animateDpAsState(
-        targetValue = if (pressed) 10.dp else 18.dp,
+        targetValue = when {
+            pill -> 28.dp
+            pressed -> 10.dp
+            else -> 18.dp
+        },
         animationSpec = ButtonRadiusSpec,
         label = "buttonRadius",
     )

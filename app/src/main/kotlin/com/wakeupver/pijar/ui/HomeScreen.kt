@@ -279,6 +279,7 @@ private fun HeroCard(game: GameRecord, platform: PlatformDef?, edge: Dp, onOpen:
                     text = stringResource(R.string.action_play),
                     onClick = onPlay,
                     icon = Icons.Rounded.PlayArrow,
+                    pill = true,
                 )
             }
         }

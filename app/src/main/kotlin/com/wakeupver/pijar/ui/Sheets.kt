@@ -172,6 +172,7 @@ fun GameSheet(
                 onClick = onPlay,
                 icon = Icons.Rounded.PlayArrow,
                 modifier = Modifier.fillMaxWidth(),
+                pill = true,
             )
 
             if (stats.isNotEmpty()) {
