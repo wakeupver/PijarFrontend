@@ -43,6 +43,7 @@ class Repository(private val context: Context) {
     private val userPlatformDir = File(context.filesDir, "platforms")
     private val notifier by lazy { ScrapeNotifier(context) }
     private val scrapePermits = Semaphore(8)
+    private val indexPermits = Semaphore(3)
     private val lock = Any()
     private var saveJob: Job? = null
 
@@ -284,6 +285,7 @@ class Repository(private val context: Context) {
         if (ids.isEmpty()) return 0 to 0
         val progressNotifier = if (notify) notifier else null
         runCatching { progressNotifier?.start(ids.size) }
+        warmIndexes(ids)
         val done = AtomicInteger(0)
         val results: List<Boolean> = coroutineScope {
             ids.map { id ->
@@ -304,6 +306,26 @@ class Repository(private val context: Context) {
         val updated = results.count { it }
         runCatching { progressNotifier?.finish(updated, ids.size) }
         return Pair(updated, ids.size)
+    }
+
+    private suspend fun warmIndexes(ids: List<String>) {
+        val systems = ids.mapNotNull { id ->
+            _state.value.games.firstOrNull { it.id == id }
+        }.mapNotNull { game ->
+            val def = _catalog.value[game.platformId]
+            def?.libretroName?.takeIf { it.isNotBlank() }
+                ?: def?.name?.takeIf { it.isNotBlank() }
+        }.toSet()
+        if (systems.isEmpty()) return
+        coroutineScope {
+            systems.map { system ->
+                async(Dispatchers.IO) {
+                    indexPermits.withPermit {
+                        runCatching { LibretroThumbnails.warm(system, context.cacheDir) }
+                    }
+                }
+            }.awaitAll()
+        }
     }
 
     private fun needsScrape(game: GameRecord): Boolean {

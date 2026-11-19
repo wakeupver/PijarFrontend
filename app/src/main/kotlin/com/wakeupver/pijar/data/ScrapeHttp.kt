@@ -6,8 +6,9 @@ import java.net.URL
 import java.net.URLEncoder
 
 object ScrapeHttp {
-    private const val CONNECT_TIMEOUT = 8_000
-    private const val READ_TIMEOUT = 12_000
+    private const val CONNECT_TIMEOUT = 10_000
+    private const val READ_TIMEOUT = 20_000
+    private const val TOTAL_TIMEOUT = 45_000
     private const val MAX_BYTES = 8 * 1024 * 1024
 
     fun encode(value: String): String = URLEncoder.encode(value, "UTF-8").replace("+", "%20")
@@ -50,7 +51,9 @@ object ScrapeHttp {
                 val out = java.io.ByteArrayOutputStream()
                 val buffer = ByteArray(8 * 1024)
                 var total = 0
+                val deadline = System.currentTimeMillis() + TOTAL_TIMEOUT
                 while (true) {
+                    if (System.currentTimeMillis() > deadline) throw IOException("timeout total")
                     val read = it.read(buffer)
                     if (read < 0) break
                     total += read

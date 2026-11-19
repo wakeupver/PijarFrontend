@@ -11,12 +11,19 @@ object LibretroThumbnails {
     private const val ROOT = "https://thumbnails.libretro.com"
     private const val SUCCESS_TTL = 7L * 24 * 60 * 60 * 1000
     private const val FAILURE_TTL = 10L * 60 * 1000
+    private const val MAX_FUZZY_CANDIDATES = 400
+    private const val MAX_TOKEN_POSTINGS = 4
     private val LINK = Regex("""<a\s+href="([^"]+)"[^>]*>""", RegexOption.IGNORE_CASE)
     private val IMAGE = Regex("""\.(png|jpg|jpeg|webp)$""", RegexOption.IGNORE_CASE)
     private val ILLEGAL = Regex("""[&*/:<>?|"]""")
     private val memory = ConcurrentHashMap<String, CachedIndex>()
     private val indexLocks = ConcurrentHashMap<String, Any>()
     private val matches = ConcurrentHashMap<String, String>()
+
+    fun warm(system: String, cacheDir: File) {
+        if (system.isBlank()) return
+        index(system, cacheDir)
+    }
 
     fun match(system: String, fileName: String, query: String, cacheDir: File): String? {
         val key = "$system\n$fileName\n$query"
@@ -38,14 +45,13 @@ object LibretroThumbnails {
         }
 
         val queries = candidates(fileName, query).map(::queryData)
-        val queryTokens = HashSet<String>()
-        queries.forEach { queryTokens.addAll(it.tokens) }
-
-        val candidateIndices = HashSet<Int>()
-        for ((token, ids) in index.byToken) {
-            if (queryTokens.any { it == token || it.startsWith(token) || token.startsWith(it) }) {
-                candidateIndices.addAll(ids)
+        val candidateIndices = LinkedHashSet<Int>()
+        for (entry in queries) {
+            for (id in fuzzyCandidates(entry, index)) {
+                if (!candidateIndices.add(id)) continue
+                if (candidateIndices.size >= MAX_FUZZY_CANDIDATES) break
             }
+            if (candidateIndices.size >= MAX_FUZZY_CANDIDATES) break
         }
         if (candidateIndices.isEmpty()) return null
 
@@ -65,9 +71,49 @@ object LibretroThumbnails {
             if (adjusted > bestScore) {
                 bestScore = adjusted
                 bestName = item.name
+                if (bestScore == 1000) break
             }
         }
         return bestName?.let { link(system, it) }
+    }
+
+    private fun fuzzyCandidates(query: QueryData, index: IndexedNames): Set<Int> {
+        if (query.tokens.isEmpty()) return emptySet()
+        val postings = ArrayList<Pair<String, Set<Int>>>(query.tokens.size)
+        for (token in query.tokens) {
+            val exact = index.byToken[token]
+            if (exact != null) {
+                postings += token to exact.toHashSet()
+                continue
+            }
+            var near: List<Int>? = null
+            for ((key, ids) in index.byToken) {
+                if (key.startsWith(token) || token.startsWith(key)) {
+                    if (near == null || ids.size < near.size) near = ids
+                }
+            }
+            if (near != null) postings += token to near.toHashSet()
+        }
+        if (postings.isEmpty()) return emptySet()
+        postings.sortBy { it.second.size }
+        val rarest = postings.take(MAX_TOKEN_POSTINGS)
+        val base = rarest.minByOrNull { it.second.size }?.second ?: return emptySet()
+        val intersection = LinkedHashSet<Int>()
+        for (id in base) {
+            if (rarest.all { it.second.contains(id) }) {
+                intersection += id
+                if (intersection.size >= MAX_FUZZY_CANDIDATES) return intersection
+            }
+        }
+        if (intersection.isNotEmpty()) return intersection
+        val union = LinkedHashSet<Int>()
+        for ((_, ids) in rarest) {
+            for (id in ids) {
+                union += id
+                if (union.size >= MAX_FUZZY_CANDIDATES) return union
+            }
+        }
+        return union
     }
 
     private fun index(system: String, cacheDir: File): IndexedNames {
