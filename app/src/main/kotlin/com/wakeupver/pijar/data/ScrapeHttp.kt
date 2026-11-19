@@ -82,7 +82,7 @@ object ScrapeHttp {
         headers.forEach { (key, value) -> connection.setRequestProperty(key, value) }
         if (body != null) {
             connection.doOutput = true
-            connection.fixedLengthStreamingMode = body.size
+            connection.setFixedLengthStreamingMode(body.size)
             connection.outputStream.use { it.write(body) }
         }
         return connection

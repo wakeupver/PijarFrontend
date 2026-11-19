@@ -7,9 +7,12 @@ import com.wakeupver.pijar.core.PlatformDef
 import com.wakeupver.pijar.core.ScrapeMatcher
 import com.wakeupver.pijar.core.ScrapeSettings
 import com.wakeupver.pijar.core.ScrapeSource
+import com.wakeupver.pijar.core.Json
 import com.wakeupver.pijar.core.asArray
 import com.wakeupver.pijar.core.asObject
-import com.wakeupver.pijar.core.Json
+import com.wakeupver.pijar.core.long
+import com.wakeupver.pijar.core.objects
+import com.wakeupver.pijar.core.string
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -70,21 +73,23 @@ object Scraper {
         val root = ScrapeHttp.get(url)?.let { Json.parse(it).asObject() } ?: return null
         val data = root["data"].asObject() ?: return null
         val games = data.objects("games")
-        val best = ScrapeMatcher.best(
-            query,
-            games.map { it.string("game_title").ifBlank { it.string("name") } to it },
-        ) ?: return null
-        val genreNames = data["genres"].asObject().orEmpty().mapValues { it.value?.toString().orEmpty() }
-        val genres = (best["genres"] as? List<*>).orEmpty().mapNotNull {
-            genreNames[it?.toString().orEmpty()].takeUnless { value -> value.isNullOrBlank() }
+        val candidates = games.map { game ->
+            game.string("game_title").ifBlank { game.string("name") } to game
+        }
+        val best = ScrapeMatcher.best(query, candidates) ?: return null
+        val genreNames = data["genres"].asObject().orEmpty().mapValues { entry -> entry.value?.toString().orEmpty() }
+        val genres = (best["genres"] as? List<*>).orEmpty().mapNotNull { value ->
+            genreNames[value?.toString().orEmpty()]?.takeIf { it.isNotBlank() }
         }
         val boxart = data["boxart"].asObject()
         val arts = boxart?.get(best.long("id").toString())?.asArray().orEmpty().mapNotNull { it.asObject() }
         val art = arts.firstOrNull { it.string("type").contains("front", ignoreCase = true) } ?: arts.firstOrNull()
         val filename = art?.string("filename").orEmpty()
-        val cover = art?.string("uri").takeUnless { it.isNullOrBlank() }
-            ?: filename.takeIf { it.isNotBlank() }?.let { "https://cdn.thegamesdb.net/images/original/$it" }
-            ?: ""
+        val uri = art?.string("uri").orEmpty()
+        val fallback = filename.takeIf { it.isNotBlank() }
+            ?.let { "https://cdn.thegamesdb.net/images/original/$it" }
+            .orEmpty()
+        val cover = uri.ifBlank { fallback }
         return GameMetadata(
             source = ScrapeSource.THE_GAMES_DB,
             title = best.string("game_title").ifBlank { best.string("name") },
@@ -108,10 +113,17 @@ object Scraper {
             ?.let { Json.parse(it).asArray() }
             ?.mapNotNull { it.asObject() }
             .orEmpty()
-        val best = ScrapeMatcher.best(query, games.map { it.string("name") to it }) ?: return null
-        val genres = (best["genres"] as? List<*>).orEmpty().mapNotNull { it.asObject()?.string("name").takeUnless { it.isNullOrBlank() } }
-        val cover = best["cover"].asObject()?.string("url").orEmpty()
-            .let { if (it.isBlank()) "" else "https:${it.replace("t_thumb", "t_original")}" }
+        val candidates = games.map { game -> game.string("name") to game }
+        val best = ScrapeMatcher.best(query, candidates) ?: return null
+        val genres = (best["genres"] as? List<*>).orEmpty().mapNotNull { value ->
+            value.asObject()?.string("name")?.takeIf { it.isNotBlank() }
+        }
+        val rawCover = best["cover"].asObject()?.string("url").orEmpty()
+        val cover = if (rawCover.isBlank()) {
+            ""
+        } else {
+            "https:${rawCover.replace("t_thumb", "t_original")}"
+        }
         val released = best.long("first_release_date")
         return GameMetadata(
             source = ScrapeSource.IGDB,
