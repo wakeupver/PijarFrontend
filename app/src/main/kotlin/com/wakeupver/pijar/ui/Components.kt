@@ -195,6 +195,9 @@ fun GameArt(game: GameRecord, platform: PlatformDef?, modifier: Modifier = Modif
     }
 }
 
+/** Rasio lebar : tinggi sampul game; dipakai GameCard dan jendela potong rak di Beranda. */
+const val GameArtAspectRatio = 0.8f
+
 @Composable
 fun GameCard(
     game: GameRecord,
@@ -214,7 +217,7 @@ fun GameCard(
         ),
     ) {
         Box {
-            GameArt(game = game, platform = platform, modifier = Modifier.fillMaxWidth().aspectRatio(0.8f))
+            GameArt(game = game, platform = platform, modifier = Modifier.fillMaxWidth().aspectRatio(GameArtAspectRatio))
             if (game.favorite) {
                 Icon(
                     imageVector = Icons.Rounded.Favorite,

@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -45,11 +46,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.wakeupver.pijar.R
@@ -87,6 +97,8 @@ fun HomeScreen(
     // Satu margin horizontal untuk seluruh isi Beranda (judul, kartu, carousel, rak) supaya tepinya sejajar.
     // Dasarnya 24dp, sama dengan padding teks judul. Naik hanya bila zona gestur "kembali" sistem lebih lebar,
     // agar kartu yang bisa digeser tidak berada di bawah zona gestur di tepi layar.
+    // Carousel dan rak digulir di dalam jendela selebar [margin kiri .. margin kanan] dan dipotong tepat di situ,
+    // bukan memakai contentPadding (yang hanya memberi jarak awal; isinya tetap tembus sampai tepi layar).
     val layoutDirection = LocalLayoutDirection.current
     val gestureInsets = WindowInsets.systemGestures.asPaddingValues()
     val edge = maxOf(24.dp, gestureInsets.calculateStartPadding(layoutDirection))
@@ -141,9 +153,13 @@ fun HomeScreen(
                         HorizontalMultiBrowseCarousel(
                             state = rememberCarouselState { platforms.size },
                             preferredItemWidth = 232.dp,
-                            modifier = Modifier.fillMaxWidth().height(208.dp),
+                            // Jendela carousel = lebar teks judul; sudut potongnya sama dengan sudut kartu platform.
+                            modifier = Modifier
+                                .padding(horizontal = edge)
+                                .fillMaxWidth()
+                                .height(208.dp)
+                                .clip(MaterialTheme.shapes.extraLarge),
                             itemSpacing = 10.dp,
-                            contentPadding = PaddingValues(horizontal = edge),
                         ) { index ->
                             val def = platforms[index]
                             PlatformCard(
@@ -319,10 +335,13 @@ private fun GameShelf(
     edge: Dp,
     onOpen: (GameRecord) -> Unit,
 ) {
+    // Jendela rak = lebar teks judul. Sudut atasnya mengikuti sudut sampul game (shapes.large), jadi sampul yang
+    // terpotong di margin tetap terlihat membulat; judul di bawah sampul dipotong lurus.
+    val windowShape = ShelfWindowShape(MaterialTheme.shapes.large.topStart, ShelfCardWidth / GameArtAspectRatio)
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SectionHeader(text = title, horizontalPadding = edge)
         LazyRow(
-            contentPadding = PaddingValues(horizontal = edge),
+            modifier = Modifier.padding(horizontal = edge).clip(windowShape),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(games, key = { it.id }) { game ->
@@ -331,9 +350,32 @@ private fun GameShelf(
                     platform = catalog[game.platformId],
                     onClick = { onOpen(game) },
                     onLongClick = { onOpen(game) },
-                    modifier = Modifier.width(132.dp),
+                    modifier = Modifier.width(ShelfCardWidth),
                 )
             }
         }
+    }
+}
+
+private val ShelfCardWidth = 132.dp
+
+/**
+ * Bentuk potong jendela rak game. Sudut membulat hanya di area sampul (setinggi [coverHeight] dari atas);
+ * area judul di bawahnya dipotong lurus supaya huruf pertama judul tidak ikut terpotong lengkung sudut.
+ */
+private data class ShelfWindowShape(
+    private val corner: CornerSize,
+    private val coverHeight: Dp,
+) : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+        val roundedHeight = with(density) { coverHeight.toPx() }.coerceAtMost(size.height)
+        val radius = corner.toPx(Size(size.width, roundedHeight), density)
+        val path = Path().apply {
+            addRoundRect(RoundRect(0f, 0f, size.width, roundedHeight, CornerRadius(radius, radius)))
+            if (roundedHeight < size.height) {
+                addRect(Rect(0f, roundedHeight, size.width, size.height))
+            }
+        }
+        return Outline.Generic(path)
     }
 }
