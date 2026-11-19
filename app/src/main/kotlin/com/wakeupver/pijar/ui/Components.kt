@@ -185,38 +185,63 @@ fun GameArt(game: GameRecord, platform: PlatformDef?, modifier: Modifier = Modif
             ?: game.metadata.coverUrl.takeIf { it.isNotBlank() }
     }
     val colors = MaterialTheme.colorScheme
-    val shape = MaterialTheme.shapes.large
-    Box(
-        modifier = modifier.clip(shape).background(colors.surfaceContainerHighest),
-        contentAlignment = Alignment.Center,
-    ) {
-        val file = art
-        if (file != null) {
-            AsyncImage(
-                model = file,
-                contentDescription = game.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-            )
-        } else {
-            PlatformBadge(shortName = platform?.shortName ?: "?", key = game.platformId, size = badgeSize)
-        }
+    val coverShape = MaterialTheme.shapes.large
+    Box(modifier, contentAlignment = Alignment.Center) {
         Box(
-            modifier = Modifier.fillMaxSize().background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        colors.primary.copy(alpha = 0.18f),
-                        Color.Transparent,
-                        colors.tertiary.copy(alpha = 0.14f),
-                    ),
-                ),
-            ),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp)
+                .clip(coverShape)
+                .background(colors.primaryContainer.copy(alpha = 0.55f)),
         )
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .border(1.dp, colors.onSurface.copy(alpha = 0.10f), shape),
-        )
+                .padding(4.dp)
+                .clip(coverShape)
+                .background(colors.surfaceContainerHighest),
+        ) {
+            val file = art
+            if (file != null) {
+                AsyncImage(
+                    model = file,
+                    contentDescription = game.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                PlatformBadge(shortName = platform?.shortName ?: "?", key = game.platformId, size = badgeSize)
+            }
+            Box(
+                modifier = Modifier.fillMaxSize().background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            colors.primary.copy(alpha = 0.30f),
+                            Color.Transparent,
+                            colors.secondary.copy(alpha = 0.26f),
+                        ),
+                    ),
+                ),
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .border(1.dp, colors.primary.copy(alpha = 0.35f), coverShape),
+            )
+            Surface(
+                shape = CircleShape,
+                color = colors.secondaryContainer.copy(alpha = 0.92f),
+                modifier = Modifier.align(Alignment.BottomStart).padding(8.dp),
+            ) {
+                Text(
+                    text = (platform?.shortName ?: game.platformId).uppercase().take(6),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.onSecondaryContainer,
+                    maxLines = 1,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                )
+            }
+        }
     }
 }
 
