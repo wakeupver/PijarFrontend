@@ -5,6 +5,7 @@ import com.wakeupver.pijar.core.ScrapeMatcher
 import java.io.File
 import java.net.URLDecoder
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 
 object LibretroThumbnails {
     private const val ROOT = "https://thumbnails.libretro.com"
@@ -13,15 +14,16 @@ object LibretroThumbnails {
     private val LINK = Regex("""<a\s+href="([^"]+)"[^>]*>""", RegexOption.IGNORE_CASE)
     private val IMAGE = Regex("""\.(png|jpg|jpeg|webp)$""", RegexOption.IGNORE_CASE)
     private val ILLEGAL = Regex("""[&*/:<>?|"]""")
-    private val memory = HashMap<String, CachedIndex>()
-    private val matches = HashMap<String, String?>()
+    private val memory = ConcurrentHashMap<String, CachedIndex>()
+    private val indexLocks = ConcurrentHashMap<String, Any>()
+    private val matches = ConcurrentHashMap<String, String>()
 
     fun match(system: String, fileName: String, query: String, cacheDir: File): String? {
         val key = "$system\n$fileName\n$query"
-        val cached = synchronized(matches) { matches[key] }
+        val cached = matches[key]
         if (cached != null) return cached
         val result = matchUncached(system, fileName, query, cacheDir)
-        if (result != null) synchronized(matches) { matches[key] = result }
+        if (result != null) matches[key] = result
         return result
     }
 
@@ -70,20 +72,26 @@ object LibretroThumbnails {
 
     private fun index(system: String, cacheDir: File): IndexedNames {
         val key = system.lowercase(Locale.ROOT)
-        val cached = memory[key]
-        if (cached != null && !expired(cached)) return cached.index
-
-        val file = cacheFile(cacheDir, key)
-        val stored = readCache(file)
-        val names = stored ?: run {
-            val url = "$ROOT/${ScrapeHttp.encode(system)}/Named_Boxarts/"
-            val found = ScrapeHttp.get(url)?.let(::parse).orEmpty()
-            writeCache(file, found)
-            found
+        memory[key]?.let { cached ->
+            if (!expired(cached)) return cached.index
         }
-        val built = build(names)
-        memory[key] = CachedIndex(System.currentTimeMillis(), built)
-        return built
+        val lock = indexLocks.computeIfAbsent(key) { Any() }
+        return synchronized(lock) {
+            memory[key]?.let { cached ->
+                if (!expired(cached)) return@synchronized cached.index
+            }
+            val file = cacheFile(cacheDir, key)
+            val stored = readCache(file)
+            val names = stored ?: run {
+                val url = "$ROOT/${ScrapeHttp.encode(system)}/Named_Boxarts/"
+                val found = ScrapeHttp.get(url)?.let(::parse).orEmpty()
+                writeCache(file, found)
+                found
+            }
+            val built = build(names)
+            memory[key] = CachedIndex(System.currentTimeMillis(), built)
+            built
+        }
     }
 
     private fun build(names: List<String>): IndexedNames {

@@ -283,7 +283,7 @@ class Repository(private val context: Context) {
     private suspend fun scrapeMany(ids: List<String>, notify: Boolean, force: Boolean): Pair<Int, Int> {
         if (ids.isEmpty()) return 0 to 0
         val progressNotifier = if (notify) notifier else null
-        progressNotifier?.start(ids.size)
+        runCatching { progressNotifier?.start(ids.size) }
         val done = AtomicInteger(0)
         val results: List<Boolean> = coroutineScope {
             ids.map { id ->
@@ -295,14 +295,14 @@ class Repository(private val context: Context) {
                             false
                         }
                         val count = done.incrementAndGet()
-                        progressNotifier?.progress(count, ids.size)
+                        runCatching { progressNotifier?.progress(count, ids.size) }
                         ok
                     }
                 }
             }.awaitAll()
         }
         val updated = results.count { it }
-        progressNotifier?.finish(updated, ids.size)
+        runCatching { progressNotifier?.finish(updated, ids.size) }
         return Pair(updated, ids.size)
     }
 
