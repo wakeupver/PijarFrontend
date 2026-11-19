@@ -15,7 +15,7 @@ enum class ScrapeSource {
     }
 }
 
-data class ScrapeSettings
+object ScrapeSettings
 
 data class GameMetadata(
     val source: ScrapeSource? = null,

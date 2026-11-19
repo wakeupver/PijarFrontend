@@ -46,7 +46,7 @@ class StateTest {
             prefs = UiPrefs(
                 dynamicColor = false,
                 accentHue = 120,
-                scrape = ScrapeSettings(),
+                scrape = ScrapeSettings,
             ),
         )
         assertEquals(state, StateCodec.decode(StateCodec.encode(state)))
@@ -78,7 +78,7 @@ class StateTest {
         val s = StateCodec.decode(
             """{"games":[{"id":"x","platform":"psx","path":"/a.iso","metadata":{"source":"igdb","genres":["Action"],"coverUrl":"https://example.test/x.png"}}],"prefs":{"scrape":{"enabledSources":["libretro","unknown"]}}}""",
         )
-        assertEquals(ScrapeSettings(), s.prefs.scrape)
+        assertEquals(ScrapeSettings, s.prefs.scrape)
         val metadata = s.games.single().metadata
         assertNull(metadata.source)
         assertEquals(listOf("Action"), metadata.genres)

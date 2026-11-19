@@ -38,7 +38,7 @@ data class UiPrefs(
     val dynamicColor: Boolean = true,
     /** Hue aksen (0..359) saat warna dinamis mati. */
     val accentHue: Int = 265,
-    val scrape: ScrapeSettings = ScrapeSettings(),
+    val scrape: ScrapeSettings = ScrapeSettings,
 )
 
 data class AppState(
@@ -96,7 +96,7 @@ object StateCodec {
             UiPrefs(
                 dynamicColor = p.bool("dynamicColor", true),
                 accentHue = p.int("accentHue", 265).coerceIn(0, 359),
-                scrape = ScrapeSettings(),
+                scrape = ScrapeSettings,
             )
         }
         val platforms = root.objects("platforms").mapNotNull { o ->
