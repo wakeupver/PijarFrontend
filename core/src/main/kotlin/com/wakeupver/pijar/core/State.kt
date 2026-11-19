@@ -31,12 +31,14 @@ data class GameRecord(
     val playCount: Int = 0,
     val favorite: Boolean = false,
     val sizeBytes: Long = 0L,
+    val metadata: GameMetadata = GameMetadata(),
 )
 
 data class UiPrefs(
     val dynamicColor: Boolean = true,
     /** Hue aksen (0..359) saat warna dinamis mati. */
     val accentHue: Int = 265,
+    val scrape: ScrapeSettings = ScrapeSettings(),
 )
 
 data class AppState(
@@ -55,6 +57,12 @@ object StateCodec {
             "prefs" to linkedMapOf<String, Any?>(
                 "dynamicColor" to state.prefs.dynamicColor,
                 "accentHue" to state.prefs.accentHue,
+                "scrape" to linkedMapOf<String, Any?>(
+                    "enabledSources" to state.prefs.scrape.enabledSources.map { it.storageName },
+                    "theGamesDbApiKey" to state.prefs.scrape.theGamesDbApiKey,
+                    "igdbClientId" to state.prefs.scrape.igdbClientId,
+                    "igdbClientSecret" to state.prefs.scrape.igdbClientSecret,
+                ),
             ),
             "platforms" to state.platforms.map {
                 linkedMapOf<String, Any?>(
@@ -77,6 +85,7 @@ object StateCodec {
                     "playCount" to it.playCount,
                     "favorite" to it.favorite,
                     "size" to it.sizeBytes,
+                    "metadata" to encodeMetadata(it.metadata),
                 )
             },
         )
@@ -89,9 +98,25 @@ object StateCodec {
         val prefs = if (p == null) {
             UiPrefs()
         } else {
+            val s = p["scrape"].asObject()
             UiPrefs(
                 dynamicColor = p.bool("dynamicColor", true),
                 accentHue = p.int("accentHue", 265).coerceIn(0, 359),
+                scrape = if (s == null) {
+                    ScrapeSettings()
+                } else {
+                    val defaults = ScrapeSettings()
+                    ScrapeSettings(
+                        enabledSources = if (s.containsKey("enabledSources")) {
+                            strings(s, "enabledSources").mapNotNull(ScrapeSource::from).toSet()
+                        } else {
+                            defaults.enabledSources
+                        },
+                        theGamesDbApiKey = s.string("theGamesDbApiKey"),
+                        igdbClientId = s.string("igdbClientId"),
+                        igdbClientSecret = s.string("igdbClientSecret"),
+                    )
+                },
             )
         }
         val platforms = root.objects("platforms").mapNotNull { o ->
@@ -126,9 +151,38 @@ object StateCodec {
                     playCount = o.int("playCount"),
                     favorite = o.bool("favorite"),
                     sizeBytes = o.long("size"),
+                    metadata = decodeMetadata(o["metadata"].asObject()),
                 )
             }
         }
         return AppState(platforms, games, prefs)
+    }
+
+    private fun strings(map: Map<String, Any?>, key: String): List<String> =
+        (map[key] as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
+
+    private fun encodeMetadata(value: GameMetadata): LinkedHashMap<String, Any?> = linkedMapOf(
+        "source" to value.source?.storageName.orEmpty(),
+        "title" to value.title,
+        "overview" to value.overview,
+        "releaseDate" to value.releaseDate,
+        "genres" to value.genres,
+        "coverUrl" to value.coverUrl,
+        "coverPath" to value.coverPath,
+        "scrapedAt" to value.scrapedAt,
+    )
+
+    private fun decodeMetadata(value: Map<String, Any?>?): GameMetadata {
+        if (value == null) return GameMetadata()
+        return GameMetadata(
+            source = ScrapeSource.from(value.string("source")),
+            title = value.string("title"),
+            overview = value.string("overview"),
+            releaseDate = value.string("releaseDate"),
+            genres = strings(value, "genres"),
+            coverUrl = value.string("coverUrl"),
+            coverPath = value.string("coverPath"),
+            scrapedAt = value.long("scrapedAt"),
+        )
     }
 }

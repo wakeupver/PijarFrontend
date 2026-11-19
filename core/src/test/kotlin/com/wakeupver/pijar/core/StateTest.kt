@@ -3,6 +3,7 @@ package com.wakeupver.pijar.core
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 class StateTest {
     @Test
@@ -19,9 +20,38 @@ class StateTest {
                 ),
             ),
             games = listOf(
-                GameRecord("id1", "psx", "/sdcard/ROMs/psx/A \"x\".iso", "A", 1, 2, 3, true, 4),
+                GameRecord(
+                    "id1",
+                    "psx",
+                    "/sdcard/ROMs/psx/A \"x\".iso",
+                    "A",
+                    1,
+                    2,
+                    3,
+                    true,
+                    4,
+                    GameMetadata(
+                        source = ScrapeSource.THE_GAMES_DB,
+                        title = "A",
+                        overview = "Ringkasan",
+                        releaseDate = "1995",
+                        genres = listOf("Action", "Puzzle"),
+                        coverUrl = "https://example.test/a.png",
+                        coverPath = "/cover/a.png",
+                        scrapedAt = 99,
+                    ),
+                ),
             ),
-            prefs = UiPrefs(dynamicColor = false, accentHue = 120),
+            prefs = UiPrefs(
+                dynamicColor = false,
+                accentHue = 120,
+                scrape = ScrapeSettings(
+                    enabledSources = setOf(ScrapeSource.THE_GAMES_DB, ScrapeSource.IGDB),
+                    theGamesDbApiKey = "tgdb-key",
+                    igdbClientId = "igdb-id",
+                    igdbClientSecret = "igdb-secret",
+                ),
+            ),
         )
         assertEquals(state, StateCodec.decode(StateCodec.encode(state)))
     }
@@ -45,6 +75,19 @@ class StateTest {
     fun unknownFileHandlingFallsBackToDefault() {
         val s = StateCodec.decode("""{"platforms":[{"id":"psx","fileHandling":"unknown"}]}""")
         assertEquals(FileHandling.DEFAULT, s.platforms.single().fileHandling)
+    }
+
+    @Test
+    fun scrapeStateIsTolerant() {
+        val s = StateCodec.decode(
+            """{"games":[{"id":"x","platform":"psx","path":"/a.iso","metadata":{"source":"igdb","genres":["Action"],"coverUrl":"https://example.test/x.png"}}],"prefs":{"scrape":{"enabledSources":["libretro","unknown"]}}}""",
+        )
+        assertEquals(setOf(ScrapeSource.LIBRETRO), s.prefs.scrape.enabledSources)
+        val metadata = s.games.single().metadata
+        assertEquals(ScrapeSource.IGDB, metadata.source)
+        assertEquals(listOf("Action"), metadata.genres)
+        assertEquals("https://example.test/x.png", metadata.coverUrl)
+        assertTrue(metadata.hasData)
     }
 
     @Test

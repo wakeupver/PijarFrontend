@@ -12,6 +12,13 @@ Pijar **tidak** berafiliasi dengan, dan tidak mengandung kode atau aset antarmuk
 (aplikasinya closed-source). Hanya data definisi platform/pemutar yang dipakai, sesuai lisensi MIT di atas.
 Berkas `.dpt` dan format argumen pemutar mengikuti dokumentasi di repositori yang sama.
 
+## Sumber metadata & sampul
+
+Pijar dapat mengambil metadata dan sampul dari Libretro (https://libretro.com, https://thumbnails.libretro.com),
+TheGamesDB (https://thegamesdb.net), dan IGDB (https://www.igdb.com). Pijar tidak menyertakan data atau gambar
+dari layanan tersebut di dalam APK; permintaan dilakukan saat pengguna memilih scraper. Kredensial API disimpan
+lokal dan tidak dikirim ke pihak selain penyedia layanan yang bersangkutan.
+
 ## Pustaka
 
 Jetpack Compose & Material 3 (Apache-2.0), AndroidX (Apache-2.0), Coil (Apache-2.0),

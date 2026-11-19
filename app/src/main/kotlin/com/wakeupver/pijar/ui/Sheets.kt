@@ -66,6 +66,7 @@ import com.wakeupver.pijar.core.PlatformConfig
 import com.wakeupver.pijar.core.PlatformDef
 import com.wakeupver.pijar.core.PlayerDef
 import com.wakeupver.pijar.core.PlayerPicker
+import com.wakeupver.pijar.core.ScrapeSource
 import com.wakeupver.pijar.data.Apps
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -92,6 +93,8 @@ fun GameSheet(
     config: PlatformConfig?,
     onDismiss: () -> Unit,
     onPlay: () -> Unit,
+    isScraping: Boolean,
+    onScrape: () -> Unit,
     onToggleFavorite: () -> Unit,
     onSelectPlayer: (String) -> Unit,
 ) {
@@ -123,6 +126,22 @@ fun GameSheet(
     val playCount = if (game.playCount > 0) stringResource(R.string.game_play_count, game.playCount) else ""
     val fileSize = if (game.sizeBytes > 0L) Formatter.formatShortFileSize(context, game.sizeBytes) else ""
     val stats = listOf(lastPlayed, playCount, fileSize).filter { it.isNotEmpty() }.joinToString(" · ")
+    val releaseLabel = game.metadata.releaseDate.takeIf { it.isNotBlank() }
+        ?.let { stringResource(R.string.game_metadata_release, it) }
+        .orEmpty()
+    val genresLabel = game.metadata.genres.takeIf { it.isNotEmpty() }
+        ?.let { stringResource(R.string.game_metadata_genres, it.joinToString(", ")) }
+        .orEmpty()
+    val sourceLabel = when (game.metadata.source) {
+        ScrapeSource.LIBRETRO -> stringResource(R.string.source_libretro)
+        ScrapeSource.THE_GAMES_DB -> stringResource(R.string.source_thegamesdb)
+        ScrapeSource.IGDB -> stringResource(R.string.source_igdb)
+        null -> ""
+    }
+    val sourceText = sourceLabel.takeIf { it.isNotBlank() }
+        ?.let { stringResource(R.string.game_metadata_source, it) }
+        .orEmpty()
+    val metadataLines = listOf(game.metadata.overview, releaseLabel, genresLabel, sourceText).filter { it.isNotBlank() }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -184,9 +203,28 @@ fun GameSheet(
                     pill = true,
                 )
             }
+            item(key = "scrape", contentType = "action") {
+                ExpressiveButton(
+                    text = stringResource(if (isScraping) R.string.game_scraping else R.string.game_scrape),
+                    onClick = onScrape,
+                    icon = Icons.Rounded.Search,
+                    tonal = true,
+                    enabled = !isScraping,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
             if (stats.isNotEmpty()) {
                 item(key = "stats", contentType = "text") {
                     Text(text = stats, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                }
+            }
+            if (metadataLines.isNotEmpty()) {
+                item(key = "metadata", contentType = "text") {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        metadataLines.forEach { line ->
+                            Text(text = line, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
                 }
             }
             if (players.isNotEmpty()) {

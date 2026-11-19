@@ -73,6 +73,7 @@ object LibraryMerge {
                 playCount = prev?.playCount ?: 0,
                 favorite = prev?.favorite ?: false,
                 sizeBytes = f.sizeBytes,
+                metadata = prev?.metadata ?: GameMetadata(),
             )
         }
     }

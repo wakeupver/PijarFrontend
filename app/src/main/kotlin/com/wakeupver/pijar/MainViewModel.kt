@@ -11,6 +11,7 @@ import com.wakeupver.pijar.core.FileHandling
 import com.wakeupver.pijar.core.GameRecord
 import com.wakeupver.pijar.core.PlatformCatalog
 import com.wakeupver.pijar.core.PlayerPicker
+import com.wakeupver.pijar.core.ScrapeSource
 import com.wakeupver.pijar.core.UiPrefs
 import com.wakeupver.pijar.data.AppEntry
 import com.wakeupver.pijar.data.Apps
@@ -40,6 +41,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val state: StateFlow<AppState> = repo.state
     val catalog: StateFlow<PlatformCatalog> = repo.catalog
     val scanning: StateFlow<Set<String>> = repo.scanning
+    val scraping: StateFlow<Set<String>> = repo.scraping
     val ready: StateFlow<Boolean> = repo.ready
 
     /** Hanya berubah bila preferensi berubah, agar tema tidak ikut berkomposisi ulang saat pustaka berubah. */
@@ -124,6 +126,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             say(R.string.msg_scan_done, total)
         }
     }
+
+    fun scrape(gameId: String) {
+        viewModelScope.launch {
+            if (!repo.scrape(gameId)) say(R.string.msg_scrape_none)
+        }
+    }
+
+    fun scrapeAll() {
+        viewModelScope.launch {
+            val (updated, total) = repo.scrapeAll()
+            if (updated == 0) {
+                say(R.string.msg_scrape_none)
+            } else {
+                say(R.string.msg_scrape_done, updated, total)
+            }
+        }
+    }
+
+    fun setScrapeSource(source: ScrapeSource, enabled: Boolean) = repo.setScrapeSource(source, enabled)
+
+    fun setTheGamesDbApiKey(value: String) = repo.setTheGamesDbApiKey(value)
+
+    fun setIgdbClientId(value: String) = repo.setIgdbClientId(value)
+
+    fun setIgdbClientSecret(value: String) = repo.setIgdbClientSecret(value)
 
     fun toggleFavorite(gameId: String) = repo.toggleFavorite(gameId)
 

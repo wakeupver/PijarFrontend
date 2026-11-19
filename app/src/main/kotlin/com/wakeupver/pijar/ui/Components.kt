@@ -173,8 +173,13 @@ fun PlatformBadge(shortName: String, key: String, size: Dp, modifier: Modifier =
 /** Gambar sampul lokal bila ada; jika tidak, lencana platform. */
 @Composable
 fun GameArt(game: GameRecord, platform: PlatformDef?, modifier: Modifier = Modifier, badgeSize: Dp = 64.dp) {
-    val art by produceState<File?>(null, game.path) {
-        value = withContext(Dispatchers.IO) { ArtFinder.find(game.path) }
+    val art by produceState<Any?>(null, game.path, game.metadata.coverPath, game.metadata.coverUrl) {
+        val scraped = game.metadata.coverPath.takeIf { it.isNotBlank() }
+            ?.let(::File)
+            ?.takeIf { it.isFile }
+        value = scraped
+            ?: withContext(Dispatchers.IO) { ArtFinder.find(game.path) }
+            ?: game.metadata.coverUrl.takeIf { it.isNotBlank() }
     }
     val colors = badgeColors(game.platformId)
     Box(

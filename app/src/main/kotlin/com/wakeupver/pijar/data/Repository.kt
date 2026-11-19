@@ -11,6 +11,7 @@ import com.wakeupver.pijar.core.PlatformCatalog
 import com.wakeupver.pijar.core.PlatformConfig
 import com.wakeupver.pijar.core.PlatformDef
 import com.wakeupver.pijar.core.Rx
+import com.wakeupver.pijar.core.ScrapeSource
 import com.wakeupver.pijar.core.StateCodec
 import com.wakeupver.pijar.core.UiPrefs
 import kotlinx.coroutines.CoroutineScope
@@ -45,6 +46,9 @@ class Repository(private val context: Context) {
 
     private val _scanning = MutableStateFlow<Set<String>>(emptySet())
     val scanning: StateFlow<Set<String>> = _scanning.asStateFlow()
+
+    private val _scraping = MutableStateFlow<Set<String>>(emptySet())
+    val scraping: StateFlow<Set<String>> = _scraping.asStateFlow()
 
     private val _ready = MutableStateFlow(false)
     val ready: StateFlow<Boolean> = _ready.asStateFlow()
@@ -175,6 +179,23 @@ class Repository(private val context: Context) {
 
     fun setPrefs(transform: (UiPrefs) -> UiPrefs) = update { s -> s.copy(prefs = transform(s.prefs)) }
 
+    fun setScrapeSource(source: ScrapeSource, enabled: Boolean) = setPrefs { prefs ->
+        val sources = if (enabled) prefs.scrape.enabledSources + source else prefs.scrape.enabledSources - source
+        prefs.copy(scrape = prefs.scrape.copy(enabledSources = sources))
+    }
+
+    fun setTheGamesDbApiKey(value: String) = setPrefs { prefs ->
+        prefs.copy(scrape = prefs.scrape.copy(theGamesDbApiKey = value.trim()))
+    }
+
+    fun setIgdbClientId(value: String) = setPrefs { prefs ->
+        prefs.copy(scrape = prefs.scrape.copy(igdbClientId = value.trim()))
+    }
+
+    fun setIgdbClientSecret(value: String) = setPrefs { prefs ->
+        prefs.copy(scrape = prefs.scrape.copy(igdbClientSecret = value.trim()))
+    }
+
     fun toggleFavorite(gameId: String) = update { s ->
         s.copy(games = s.games.map { if (it.id == gameId) it.copy(favorite = !it.favorite) else it })
     }
@@ -205,6 +226,38 @@ class Repository(private val context: Context) {
         } finally {
             _scanning.update { it - platformId }
         }
+    }
+
+    suspend fun scrape(gameId: String): Boolean = withContext(Dispatchers.IO) {
+        val game = _state.value.games.firstOrNull { it.id == gameId } ?: return@withContext false
+        val platform = _catalog.value[game.platformId]
+        val settings = _state.value.prefs.scrape
+        _scraping.update { it + gameId }
+        try {
+            val metadata = Scraper.scrape(game, platform, settings)
+            if (!metadata.hasData) return@withContext false
+            val downloaded = metadata.coverUrl.takeIf { it.isNotBlank() }
+                ?.let { CoverCache.fetch(context.filesDir, game.id, it) }
+                .orEmpty()
+            val finalMetadata = metadata.copy(coverPath = downloaded.ifBlank { metadata.coverPath })
+            update { s ->
+                s.copy(games = s.games.map { if (it.id == gameId) it.copy(metadata = finalMetadata) else it })
+            }
+            true
+        } catch (e: Exception) {
+            false
+        } finally {
+            _scraping.update { it - gameId }
+        }
+    }
+
+    suspend fun scrapeAll(): Pair<Int, Int> = withContext(Dispatchers.IO) {
+        val ids = _state.value.games.map { it.id }
+        var updated = 0
+        for (id in ids) {
+            if (scrape(id)) updated++
+        }
+        updated to ids.size
     }
 
     /** Mengimpor satu berkas platform berformat Daijishō dan menambahkannya ke daftar platform pengguna. */

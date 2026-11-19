@@ -30,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -42,10 +43,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.wakeupver.pijar.R
 import com.wakeupver.pijar.core.AppState
 import com.wakeupver.pijar.core.PlatformCatalog
+import com.wakeupver.pijar.core.ScrapeSource
 import com.wakeupver.pijar.ui.theme.tonalSpotAccent
 
 private val ACCENT_HUES = listOf(265, 215, 175, 140, 48, 18, 340, 300)
@@ -62,6 +67,12 @@ fun SettingsScreen(
     onImport: () -> Unit,
     onDynamicColor: (Boolean) -> Unit,
     onAccent: (Int) -> Unit,
+    isScraping: Boolean,
+    onScrapeAll: () -> Unit,
+    onScrapeSource: (ScrapeSource, Boolean) -> Unit,
+    onTgdbKey: (String) -> Unit,
+    onIgdbClientId: (String) -> Unit,
+    onIgdbClientSecret: (String) -> Unit,
     onRequestHome: () -> Unit,
     onRequestStorage: () -> Unit,
     contentPadding: PaddingValues,
@@ -71,6 +82,12 @@ fun SettingsScreen(
     val swatches = remember { ACCENT_HUES.associateWith { tonalSpotAccent(it) } }
     val dynamicSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val dynamicActive = state.prefs.dynamicColor && dynamicSupported
+    val scrapeSources = listOf(
+        ScrapeSource.LIBRETRO to R.string.source_libretro,
+        ScrapeSource.THE_GAMES_DB to R.string.source_thegamesdb,
+        ScrapeSource.IGDB to R.string.source_igdb,
+    )
+    val scrape = state.prefs.scrape
     val transparent = ListItemDefaults.colors(containerColor = Color.Transparent)
 
     Column(modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection)) {
@@ -186,6 +203,75 @@ fun SettingsScreen(
                     }
                 }
             }
+            item { SettingsSection(stringResource(R.string.settings_section_scraper)) }
+            item {
+                Text(
+                    text = stringResource(R.string.settings_scraper_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+                )
+            }
+            items(scrapeSources, key = { it.first.name }, contentType = { "scrape_source" }) { (source, label) ->
+                ListItem(
+                    headlineContent = { Text(stringResource(label)) },
+                    trailingContent = {
+                        Switch(
+                            checked = source in scrape.enabledSources,
+                            onCheckedChange = { enabled -> onScrapeSource(source, enabled) },
+                        )
+                    },
+                    colors = transparent,
+                )
+            }
+            item {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.settings_scrape_all)) },
+                    supportingContent = if (isScraping) {
+                        { Text(stringResource(R.string.game_scraping)) }
+                    } else {
+                        null
+                    },
+                    leadingContent = { Icon(Icons.Rounded.Refresh, contentDescription = null) },
+                    colors = transparent,
+                    modifier = Modifier.clickable(enabled = !isScraping, onClick = onScrapeAll),
+                )
+            }
+            item {
+                OutlinedTextField(
+                    value = scrape.theGamesDbApiKey,
+                    onValueChange = onTgdbKey,
+                    label = { Text(stringResource(R.string.settings_tgdb_key)) },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+                )
+            }
+            item {
+                OutlinedTextField(
+                    value = scrape.igdbClientId,
+                    onValueChange = onIgdbClientId,
+                    label = { Text(stringResource(R.string.settings_igdb_client_id)) },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+                )
+            }
+            item {
+                OutlinedTextField(
+                    value = scrape.igdbClientSecret,
+                    onValueChange = onIgdbClientSecret,
+                    label = { Text(stringResource(R.string.settings_igdb_client_secret)) },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+                )
+            }
+
             item { SettingsSection(stringResource(R.string.settings_section_system)) }
             item {
                 ListItem(

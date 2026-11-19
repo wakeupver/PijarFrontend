@@ -37,7 +37,17 @@ class LibraryTest {
         val b = ScannedFile("/r/Game B.chd", "Game B.chd", 20, 2)
         val idA = Ids.game("psx", a.path)
         val existing = listOf(
-            GameRecord(idA, "psx", a.path, "Judul Saya", addedAt = 5, lastPlayedAt = 99, playCount = 3, favorite = true),
+            GameRecord(
+                idA,
+                "psx",
+                a.path,
+                "Judul Saya",
+                addedAt = 5,
+                lastPlayedAt = 99,
+                playCount = 3,
+                favorite = true,
+                metadata = GameMetadata(source = ScrapeSource.LIBRETRO, coverUrl = "https://example.test/a.png"),
+            ),
             GameRecord("old", "psx", "/r/gone.iso", "Gone", addedAt = 1),
             GameRecord("zzz", "nes", "/r/n.nes", "NES", addedAt = 1),
         )
@@ -48,6 +58,7 @@ class LibraryTest {
         assertTrue(ra.favorite)
         assertEquals(3, ra.playCount)
         assertEquals(99L, ra.lastPlayedAt)
+        assertEquals("https://example.test/a.png", ra.metadata.coverUrl)
         val rb = merged.first { it.id != idA }
         assertEquals("Game B", rb.title)
         assertEquals(1000L, rb.addedAt)

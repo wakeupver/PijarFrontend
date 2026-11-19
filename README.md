@@ -39,12 +39,13 @@ Versi: Gradle 8.13, AGP 8.11.1, Kotlin 2.2.0, Compose UI 1.9.0, Material 3 1.4.0
 - **Beranda**: kartu "Lanjutkan bermain", carousel platform (`HorizontalMultiBrowseCarousel`), rak terakhir dimainkan dan favorit.
 - **Pustaka**: filter platform/favorit, pencarian, urutan (A–Z / terbaru / terakhir dimainkan), sampul lokal otomatis
   (`<nama-rom>.png|jpg|webp` di samping ROM atau di `media/`, `images/`, `boxart/`, `covers/`).
-- **Detail game** (bottom sheet): favorit, tombol Main, statistik, dan pilihan pemutar yang cocok dengan berkas.
+- **Detail game** (bottom sheet): favorit, tombol Main, statistik, sampul, metadata online, dan pilihan pemutar yang cocok dengan berkas.
 - **Platform**: tambah dari 122 platform bawaan, lalu selesaikan setup (folder ROM dan aplikasi pemutar terpasang);
   kartu platform baru muncul di Beranda/Pustaka setelah tombol Selesai ditekan, sedangkan Batal mengembalikan platform
   ke daftar tambah. Pemilih folder atau path manual, pindai otomatis, penanganan berkas lanjutan (default/standar/legacy),
   impor JSON platform sendiri, tebakan folder otomatis (`ROMs/psx`, `Roms/Sony PlayStation`, ...).
 - **Aplikasi**: laci semua aplikasi dengan pencarian; tekan lama untuk info aplikasi.
+- **Scraper**: metadata dan sampul dari Libretro, TheGamesDB, dan IGDB; kredensial dimasukkan di Pengaturan dan disimpan lokal; bisa per game atau semua game.
 - **Pengaturan**: warna dinamis atau 8 warna aksen, jadikan aplikasi Home, akses semua berkas.
 - Bahasa: Inggris dan Indonesia (`values/`, `values-in/`).
 
@@ -52,7 +53,8 @@ Versi: Gradle 8.13, AGP 8.11.1, Kotlin 2.2.0, Compose UI 1.9.0, Material 3 1.4.0
 
 | Didukung | Belum |
 | --- | --- |
-| Berkas platform JSON dan regex nama berkas | Scraper/DSESS, metadata dan sampul online |
+| Berkas platform JSON, regex nama berkas, dan `scraperSourceList` Libretro | Scraper DSESS |
+| Metadata/sampul online (Libretro, TheGamesDB, IGDB) | Pencarian berbasis CRC |
 | Argumen pemutar gaya `am start`: `-a -d -t -c -n -p -f`, semua `--e*` (string/boolean/int/long/float/uri/array), `--activity-*`, `--grant-*` | RetroAchievements |
 | Template `{file.path}`, `{file.uri}`, `{file.mime}`, `{tags.*}` (+ `{file.name}`, `{file.basename}`, `{file.ext}`, `{file.dir}`) | Widget, koleksi, tema/wallpaper Daijishō |
 | Berkas `.dpt` (Player Template) untuk `{tags.*}` | Cadangan/pemulihan pustaka |
@@ -87,7 +89,7 @@ untuk gestur; fungsinya hanya membuat Pijar tak bisa dicopot dan otomatis jadi H
 
 ```
 core/   Kotlin/JVM murni: JSON mini, parser data Daijishō, parser argumen `am start`, template, .dpt,
-        pemindai ROM, status aplikasi. Diuji di JVM (30 uji, termasuk seluruh data platform asli).
+        pemindai ROM, status aplikasi. Diuji di JVM (35 uji, termasuk seluruh data platform asli).
 app/    Aplikasi Android (Compose): data/ (Repository, Storage, Apps), launch/ (GameLauncher), ui/ (layar, sheet, tema).
         assets/daijishou/  salinan data platform Daijishō (MIT) + LICENSE.MD
 module/ Templat modul KernelSU/Magisk (APK disisipkan oleh CI)
@@ -101,7 +103,7 @@ Mengganti nama/ID paket: ubah `namespace` dan `applicationId` di `app/build.grad
 
 Sudah (di lingkungan pembuatan):
 
-- `core`: 30 uji unit lulus. Termasuk parsing 122 platform / 1.023 pemutar dari data asli, setiap argumen diterjemahkan ke Intent
+- `core`: 35 uji unit lulus. Termasuk parsing 122 platform / 1.023 pemutar dari data asli, setiap argumen diterjemahkan ke Intent
   tanpa peringatan, indeks konsisten dengan berkas.
 - Lapisan Android non-Compose (`GameLauncher`, `Storage`, `Apps`, `SystemUi`, `Repository`, `MainViewModel`) dikompilasi terhadap
   `android.jar` API 35 asli tanpa galat tipe.
@@ -114,6 +116,7 @@ Belum:
   (`MaterialExpressiveTheme`, `MotionScheme.expressive()`, `MaterialShapes` + `toShape()`, `LoadingIndicator`); bila nama atau
   tanda tangannya berbeda di versi yang terpasang, kompilasi gagal di berkas `ui/` dan perbaikannya kecil.
 - Perilaku emulator tertentu terhadap URI `content://`, serta gestur di ROM Anda.
+- Hasil scraper dengan kredensial nyata dan cakupan nama permainan Libretro/TheGamesDB/IGDB di luar contoh lokal.
 
 ## Langkah berikutnya yang masuk akal
 

@@ -59,6 +59,7 @@ fun PijarRoot(vm: MainViewModel) {
     val state by vm.state.collectAsStateWithLifecycle()
     val catalog by vm.catalog.collectAsStateWithLifecycle()
     val scanning by vm.scanning.collectAsStateWithLifecycle()
+    val scraping by vm.scraping.collectAsStateWithLifecycle()
     val apps by vm.apps.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
 
@@ -216,6 +217,12 @@ fun PijarRoot(vm: MainViewModel) {
                         },
                         onDynamicColor = { enabled -> vm.setDynamicColor(enabled) },
                         onAccent = { hue -> vm.setAccentHue(hue) },
+                        isScraping = scraping.isNotEmpty(),
+                        onScrapeAll = { vm.scrapeAll() },
+                        onScrapeSource = { source, enabled -> vm.setScrapeSource(source, enabled) },
+                        onTgdbKey = { value -> vm.setTheGamesDbApiKey(value) },
+                        onIgdbClientId = { value -> vm.setIgdbClientId(value) },
+                        onIgdbClientSecret = { value -> vm.setIgdbClientSecret(value) },
                         onRequestHome = {
                             try {
                                 homeRequest.launch(SystemUi.homeRequestIntent(context))
@@ -241,6 +248,8 @@ fun PijarRoot(vm: MainViewModel) {
                     vm.play(context, sheetGame)
                     gameSheetId = null
                 },
+                isScraping = sheetGame.id in scraping,
+                onScrape = { vm.scrape(sheetGame.id) },
                 onToggleFavorite = { vm.toggleFavorite(sheetGame.id) },
                 onSelectPlayer = { key -> vm.setPlayer(sheetGame.platformId, key) },
             )
