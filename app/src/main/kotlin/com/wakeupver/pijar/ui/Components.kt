@@ -8,7 +8,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -27,7 +26,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Favorite
@@ -54,7 +52,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
@@ -184,63 +181,21 @@ fun GameArt(game: GameRecord, platform: PlatformDef?, modifier: Modifier = Modif
             ?: withContext(Dispatchers.IO) { ArtFinder.find(game.path) }
             ?: game.metadata.coverUrl.takeIf { it.isNotBlank() }
     }
-    val colors = MaterialTheme.colorScheme
-    val coverShape = MaterialTheme.shapes.large
-    Box(modifier, contentAlignment = Alignment.Center) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(8.dp)
-                .clip(coverShape)
-                .background(colors.primaryContainer.copy(alpha = 0.55f)),
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(4.dp)
-                .clip(coverShape)
-                .background(colors.surfaceContainerHighest),
-        ) {
-            val file = art
-            if (file != null) {
-                AsyncImage(
-                    model = file,
-                    contentDescription = game.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            } else {
-                PlatformBadge(shortName = platform?.shortName ?: "?", key = game.platformId, size = badgeSize)
-            }
-            Box(
-                modifier = Modifier.fillMaxSize().background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            colors.primary.copy(alpha = 0.30f),
-                            Color.Transparent,
-                            colors.secondary.copy(alpha = 0.26f),
-                        ),
-                    ),
-                ),
+    val colors = badgeColors(game.platformId)
+    Box(
+        modifier = modifier.clip(MaterialTheme.shapes.large).background(colors.first.copy(alpha = 0.55f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        val file = art
+        if (file != null) {
+            AsyncImage(
+                model = file,
+                contentDescription = game.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
             )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .border(1.dp, colors.primary.copy(alpha = 0.35f), coverShape),
-            )
-            Surface(
-                shape = CircleShape,
-                color = colors.secondaryContainer.copy(alpha = 0.92f),
-                modifier = Modifier.align(Alignment.BottomStart).padding(8.dp),
-            ) {
-                Text(
-                    text = (platform?.shortName ?: game.platformId).uppercase().take(6),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colors.onSecondaryContainer,
-                    maxLines = 1,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                )
-            }
+        } else {
+            PlatformBadge(shortName = platform?.shortName ?: "?", key = game.platformId, size = badgeSize)
         }
     }
 }
@@ -257,10 +212,7 @@ fun GameCard(
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Surface(
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        tonalElevation = 1.dp,
+    Column(
         modifier = modifier.combinedClickable(
             onClick = onClick,
             onLongClick = {
@@ -269,32 +221,24 @@ fun GameCard(
             },
         ),
     ) {
-        Column(modifier = Modifier.padding(4.dp)) {
-            Box {
-                GameArt(game = game, platform = platform, modifier = Modifier.fillMaxWidth().aspectRatio(GameArtAspectRatio))
-                if (game.favorite) {
-                    Icon(
-                        imageVector = Icons.Rounded.Favorite,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(8.dp)
-                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f), CircleShape)
-                            .padding(4.dp)
-                            .size(16.dp),
-                    )
-                }
+        Box {
+            GameArt(game = game, platform = platform, modifier = Modifier.fillMaxWidth().aspectRatio(GameArtAspectRatio))
+            if (game.favorite) {
+                Icon(
+                    imageVector = Icons.Rounded.Favorite,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(20.dp),
+                )
             }
-            Text(
-                text = game.title,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
-            )
         }
+        Text(
+            text = game.title,
+            style = MaterialTheme.typography.labelLarge,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp),
+        )
     }
 }
 
