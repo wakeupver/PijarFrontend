@@ -37,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
@@ -287,7 +288,7 @@ private fun HeroCard(game: GameRecord, platform: PlatformDef?, edge: Dp, onOpen:
 @Composable
 private fun PlatformCard(def: PlatformDef, count: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = badgeColors(def.uniqueId)
-    val decoShape = PlatformShapes.shapeFor(def.uniqueId + "#deco")
+    val decoShape = PlatformShapes.forKey(def.uniqueId + "#deco").toShape()
     val badge = remember(def.shortName) { def.shortName.uppercase().take(6) }
     Box(modifier = modifier.fillMaxSize().background(colors.first).clickable(onClick = onClick)) {
         Box(

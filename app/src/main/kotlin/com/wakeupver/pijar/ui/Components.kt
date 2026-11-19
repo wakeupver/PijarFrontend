@@ -53,7 +53,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
@@ -135,11 +134,7 @@ object PlatformShapes {
         MaterialShapes.Cookie12Sided,
     )
 
-    private val shapes: Map<RoundedPolygon, Shape> by lazy { polygons.associateWith { it.toShape() } }
-
     fun forKey(key: String): RoundedPolygon = polygons[(key.hashCode() and Int.MAX_VALUE) % polygons.size]
-
-    fun shapeFor(key: String): Shape = shapes.getValue(forKey(key))
 }
 
 /** Pasangan (latar, isi) yang stabil per platform, diambil dari skema warna aktif. */
@@ -158,7 +153,7 @@ fun badgeColors(key: String): Pair<Color, Color> {
 
 @Composable
 fun PlatformBadge(shortName: String, key: String, size: Dp, modifier: Modifier = Modifier) {
-    val shape = PlatformShapes.shapeFor(key)
+    val shape = PlatformShapes.forKey(key).toShape()
     val colors = badgeColors(key)
     val label = remember(shortName) { shortName.uppercase().take(4) }
     Box(
@@ -335,7 +330,7 @@ fun EmptyState(
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
 ) {
-    val shape = EmptyCookieShape
+    val shape = MaterialShapes.Cookie12Sided.toShape()
     Column(
         modifier = modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -371,7 +366,6 @@ fun EmptyState(
 data class NavItem(val label: String, val icon: ImageVector)
 
 // Spesifikasi dibagikan agar tidak membuat objek spring baru di setiap frame animasi.
-private val EmptyCookieShape by lazy { MaterialShapes.Cookie12Sided.toShape() }
 private val ButtonRadiusSpec: FiniteAnimationSpec<Dp> = Motion.fastSpatial<Dp>()
 private val NavPillExpansionSpec: FiniteAnimationSpec<Float> = Motion.defaultSpatial<Float>()
 private val NavPillFadeSpec: FiniteAnimationSpec<Float> = Motion.fastEffects<Float>()
