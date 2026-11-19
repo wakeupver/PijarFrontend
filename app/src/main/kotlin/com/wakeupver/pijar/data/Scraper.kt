@@ -13,27 +13,26 @@ import com.wakeupver.pijar.core.asObject
 import com.wakeupver.pijar.core.long
 import com.wakeupver.pijar.core.objects
 import com.wakeupver.pijar.core.string
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 object Scraper {
-    private const val LIBRETRO_ROOT = "https://thumbnails.libretro.com"
     private const val TGDB_ENDPOINT = "https://api.thegamesdb.net/v1/Games/ByGameName"
     private const val IGDB_TOKEN_URL = "https://id.twitch.tv/oauth2/token"
     private const val IGDB_ENDPOINT = "https://api.igdb.com/v4/games"
-    private val ILLEGAL = Regex("""[&*/:<>?|"]""")
     private val DATE = SimpleDateFormat("yyyy-MM-dd", Locale.US)
     private var cachedToken: Pair<String, Long>? = null
 
-    fun scrape(game: GameRecord, platform: PlatformDef?, settings: ScrapeSettings): GameMetadata {
+    fun scrape(game: GameRecord, platform: PlatformDef?, settings: ScrapeSettings, cacheDir: File): GameMetadata {
         val fileName = game.path.substringAfterLast('/', game.path)
         val query = GameTitles.clean(fileName).ifBlank { game.title }
         var result = GameMetadata()
         val now = System.currentTimeMillis()
 
         if (ScrapeSource.LIBRETRO in settings.enabledSources) {
-            val cover = libretroCover(platform, fileName, query)
+            val cover = libretroCover(platform, fileName, query, cacheDir)
             if (cover != null) {
                 result = result.copy(source = ScrapeSource.LIBRETRO, coverUrl = cover, scrapedAt = now)
             }
@@ -47,21 +46,15 @@ object Scraper {
         return result.copy(scrapedAt = now)
     }
 
-    private fun libretroCover(platform: PlatformDef?, fileName: String, query: String): String? {
+    private fun libretroCover(
+        platform: PlatformDef?,
+        fileName: String,
+        query: String,
+        cacheDir: File,
+    ): String? {
         val system = platform?.libretroName?.takeIf { it.isNotBlank() } ?: platform?.name.orEmpty()
         if (system.isBlank()) return null
-        val names = linkedSetOf<String>()
-        names += GameTitles.baseName(fileName)
-        names += query
-        GameTitles.tags(fileName).forEach { names += it }
-        names += fileName
-        for (name in names.take(6)) {
-            val safe = ILLEGAL.replace(name.trim(), "_")
-            if (safe.isBlank()) continue
-            val url = "$LIBRETRO_ROOT/${ScrapeHttp.encode(system)}/Named_Boxarts/${ScrapeHttp.encode(safe)}.png"
-            if (ScrapeHttp.exists(url)) return url
-        }
-        return null
+        return LibretroThumbnails.match(system, fileName, query, cacheDir)
     }
 
     private fun theGamesDb(query: String, apiKey: String): GameMetadata? {

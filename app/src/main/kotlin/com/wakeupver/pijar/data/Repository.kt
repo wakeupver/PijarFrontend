@@ -234,7 +234,7 @@ class Repository(private val context: Context) {
         val settings = _state.value.prefs.scrape
         _scraping.update { it + gameId }
         try {
-            val metadata = Scraper.scrape(game, platform, settings)
+            val metadata = Scraper.scrape(game, platform, settings, context.cacheDir)
             if (!metadata.hasData) return@withContext false
             val downloaded = metadata.coverUrl.takeIf { it.isNotBlank() }
                 ?.let { CoverCache.fetch(context.filesDir, game.id, it) }
