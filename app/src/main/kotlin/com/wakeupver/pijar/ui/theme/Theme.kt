@@ -156,7 +156,6 @@ private val Inter = FontFamily(
 
 val PijarTypography: Typography = Typography().let { t ->
     t.copy(
-        defaultFontFamily = Inter,
         displayLarge = t.displayLarge.copy(fontFamily = Inter, fontWeight = FontWeight.Black),
         displayMedium = t.displayMedium.copy(fontFamily = Inter, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp),
         displaySmall = t.displaySmall.copy(fontFamily = Inter, fontWeight = FontWeight.Black, letterSpacing = (-0.25).sp),
