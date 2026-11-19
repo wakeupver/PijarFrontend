@@ -5,6 +5,7 @@ import android.util.Log
 import com.wakeupver.pijar.core.AppState
 import com.wakeupver.pijar.core.DaijishouFormat
 import com.wakeupver.pijar.core.FileHandling
+import com.wakeupver.pijar.core.GameRecord
 import com.wakeupver.pijar.core.LibraryMerge
 import com.wakeupver.pijar.core.LibraryScanner
 import com.wakeupver.pijar.core.PlatformCatalog
@@ -19,6 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -277,7 +279,7 @@ class Repository(private val context: Context) {
         val progressNotifier = if (notify) notifier else null
         progressNotifier?.start(ids.size)
         val done = AtomicInteger(0)
-        val updated = coroutineScope {
+        val results: List<Boolean> = coroutineScope {
             ids.map { id ->
                 async(Dispatchers.IO) {
                     scrapePermits.withPermit {
@@ -291,10 +293,11 @@ class Repository(private val context: Context) {
                         ok
                     }
                 }
-            }.awaitAll().count { it }
+            }.awaitAll()
         }
+        val updated = results.count { it }
         progressNotifier?.finish(updated, ids.size)
-        return updated to ids.size
+        return Pair(updated, ids.size)
     }
 
     private fun needsScrape(game: GameRecord): Boolean {
