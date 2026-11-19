@@ -7,6 +7,7 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.wakeupver.pijar.core.AppState
+import com.wakeupver.pijar.core.FileHandling
 import com.wakeupver.pijar.core.GameRecord
 import com.wakeupver.pijar.core.PlatformCatalog
 import com.wakeupver.pijar.core.PlayerPicker
@@ -100,6 +101,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setPlayer(id: String, playerKey: String) = repo.setPlayer(id, playerKey)
 
+    fun setFileHandling(id: String, fileHandling: FileHandling) = repo.setFileHandling(id, fileHandling)
+
     fun scan(id: String) {
         viewModelScope.launch {
             val n = repo.scan(id)
@@ -151,14 +154,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             say(R.string.msg_no_player)
             return
         }
-        val preferred = state.value.platforms.firstOrNull { it.platformId == game.platformId }?.playerKey.orEmpty()
-        val player = PlayerPicker.choose(def, preferred, File(game.path).name)
+        val config = state.value.platforms.firstOrNull { it.platformId == game.platformId }
+        val player = PlayerPicker.choose(def, config?.playerKey.orEmpty(), File(game.path).name)
         if (player == null) {
             say(R.string.msg_no_player)
             return
         }
         try {
-            GameLauncher.launch(context, game, player)
+            GameLauncher.launch(context, game, player, config?.fileHandling ?: FileHandling.DEFAULT)
             repo.markPlayed(game.id)
         } catch (e: LaunchException) {
             when (e.reason) {

@@ -1,11 +1,23 @@
 package com.wakeupver.pijar.core
 
+enum class FileHandling {
+    DEFAULT,
+    STANDARD,
+    LEGACY;
+
+    companion object {
+        fun from(raw: String): FileHandling =
+            FileHandling.entries.firstOrNull { it.name.equals(raw, ignoreCase = true) } ?: FileHandling.DEFAULT
+    }
+}
+
 data class PlatformConfig(
     val platformId: String,
     val folder: String = "",
     /** Kunci [PlayerDef.key] pilihan pengguna; kosong = otomatis. */
     val playerKey: String = "",
     val addedAt: Long = 0L,
+    val fileHandling: FileHandling = FileHandling.DEFAULT,
 )
 
 data class GameRecord(
@@ -49,6 +61,7 @@ object StateCodec {
                     "folder" to it.folder,
                     "player" to it.playerKey,
                     "addedAt" to it.addedAt,
+                    "fileHandling" to it.fileHandling.name,
                 )
             },
             "games" to state.games.map {
@@ -84,7 +97,13 @@ object StateCodec {
             if (id.isBlank()) {
                 null
             } else {
-                PlatformConfig(id, o.string("folder"), o.string("player"), o.long("addedAt"))
+                PlatformConfig(
+                    platformId = id,
+                    folder = o.string("folder"),
+                    playerKey = o.string("player"),
+                    addedAt = o.long("addedAt"),
+                    fileHandling = FileHandling.from(o.string("fileHandling")),
+                )
             }
         }
         val games = root.objects("games").mapNotNull { o ->

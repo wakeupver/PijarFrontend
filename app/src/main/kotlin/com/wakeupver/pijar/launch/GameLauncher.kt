@@ -13,6 +13,7 @@ import com.wakeupver.pijar.core.AmArgs
 import com.wakeupver.pijar.core.Dpt
 import com.wakeupver.pijar.core.Extra
 import com.wakeupver.pijar.core.ExtraValue
+import com.wakeupver.pijar.core.FileHandling
 import com.wakeupver.pijar.core.GameRecord
 import com.wakeupver.pijar.core.IntentFlags
 import com.wakeupver.pijar.core.PlayerDef
@@ -29,7 +30,12 @@ class LaunchException(val reason: Reason, val detail: String = "") : Exception(d
  * argumen gaya `am start` -> template diisi -> [Intent] -> startActivity.
  */
 object GameLauncher {
-    fun launch(context: Context, game: GameRecord, player: PlayerDef) {
+    fun launch(
+        context: Context,
+        game: GameRecord,
+        player: PlayerDef,
+        fileHandling: FileHandling = FileHandling.DEFAULT,
+    ) {
         val file = File(game.path)
         if (!file.isFile) throw LaunchException(LaunchException.Reason.FILE_MISSING, game.path)
 
@@ -42,11 +48,23 @@ object GameLauncher {
             ?: "application/octet-stream"
 
         var contentUri: Uri? = null
-        val ctx = TemplateContext(game.path, mime, tags) {
-            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-            contentUri = uri
-            uri.toString()
+        fun contentUriString(): String {
+            contentUri?.let { return it.toString() }
+            return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                .also { contentUri = it }
+                .toString()
         }
+        val ctx = TemplateContext(
+            path = game.path,
+            mime = mime,
+            tags = tags,
+            pathProvider = {
+                if (fileHandling == FileHandling.STANDARD) contentUriString() else game.path
+            },
+            uriProvider = {
+                if (fileHandling == FileHandling.LEGACY) Uri.fromFile(file).toString() else contentUriString()
+            },
+        )
 
         val resolved = try {
             AmArgs.parse(player.amStartArguments).resolve(ctx)
@@ -63,7 +81,7 @@ object GameLauncher {
 
         // {file.uri} dipakai: beri emulator izin baca/tulis ke URI FileProvider kita.
         val uri = contentUri
-        if (resolved.usesFileUri && uri != null) {
+        if ((resolved.usesFileUri || fileHandling == FileHandling.STANDARD) && uri != null) {
             val grant = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
             intent.addFlags(grant)
             intent.clipData = ClipData.newRawUri("rom", uri)

@@ -83,6 +83,17 @@
     <string name="sheet_platform_player">Default player</string>
     <string name="sheet_platform_player_auto">Automatic</string>
     <string name="sheet_platform_games_found">%1$d games in library</string>
+    <string name="sheet_choose_player_title">Choose player app</string>
+    <string name="sheet_choose_player_installed">%1$d installed</string>
+    <string name="sheet_choose_player_empty">No compatible player app is installed yet. Install one, then open Platform settings.</string>
+    <string name="sheet_platform_file_handling">Advanced file handling</string>
+    <string name="file_handling_default">Default</string>
+    <string name="file_handling_default_desc">Use the player template as written</string>
+    <string name="file_handling_standard">Standard</string>
+    <string name="file_handling_standard_desc">Always send a content:// URI via FileProvider</string>
+    <string name="file_handling_legacy">Legacy</string>
+    <string name="file_handling_legacy_desc">Send the raw path and file:// URI</string>
+    <string name="action_done">Done</string>
     <string name="msg_scan_done">%1$d games found</string>
     <string name="msg_need_folder">Choose a ROM folder first</string>
     <string name="msg_folder_unsupported">That folder can\'t be used directly. Pick one on internal storage or an SD card.</string>

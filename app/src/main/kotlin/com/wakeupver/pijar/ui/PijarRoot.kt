@@ -66,6 +66,7 @@ fun PijarRoot(vm: MainViewModel) {
     var libraryPlatform by rememberSaveable { mutableStateOf<String?>(null) }
     var gameSheetId by remember { mutableStateOf<String?>(null) }
     var platformSheetId by remember { mutableStateOf<String?>(null) }
+    var choosePlayerFor by remember { mutableStateOf<String?>(null) }
     var showAddPlatform by remember { mutableStateOf(false) }
     var folderTarget by remember { mutableStateOf<String?>(null) }
     var storageGranted by remember { mutableStateOf(Storage.hasAllFilesAccess(context)) }
@@ -86,6 +87,7 @@ fun PijarRoot(vm: MainViewModel) {
             libraryPlatform = null
             gameSheetId = null
             platformSheetId = null
+            choosePlayerFor = null
             showAddPlatform = false
         }
     }
@@ -243,10 +245,29 @@ fun PijarRoot(vm: MainViewModel) {
                 onPick = { def ->
                     vm.addPlatform(def.uniqueId)
                     showAddPlatform = false
-                    platformSheetId = def.uniqueId
+                    choosePlayerFor = def.uniqueId
                 },
                 onDismiss = { showAddPlatform = false },
             )
+        }
+
+        val choosePlayerId = choosePlayerFor
+        if (choosePlayerId != null) {
+            val def = catalog[choosePlayerId]
+            val config = state.platforms.firstOrNull { it.platformId == choosePlayerId }
+            if (def != null && config != null) {
+                ChoosePlayerSheet(
+                    platform = def,
+                    config = config,
+                    onSelectPlayer = { key -> vm.setPlayer(choosePlayerId, key) },
+                    onFileHandling = { mode -> vm.setFileHandling(choosePlayerId, mode) },
+                    onManage = {
+                        choosePlayerFor = null
+                        platformSheetId = choosePlayerId
+                    },
+                    onDismiss = { choosePlayerFor = null },
+                )
+            }
         }
 
         val sheetPlatformId = platformSheetId
@@ -270,6 +291,7 @@ fun PijarRoot(vm: MainViewModel) {
                     },
                     onApplyFolder = { folder -> vm.setFolder(sheetPlatformId, folder) },
                     onSelectPlayer = { key -> vm.setPlayer(sheetPlatformId, key) },
+                    onFileHandling = { mode -> vm.setFileHandling(sheetPlatformId, mode) },
                     onRemove = {
                         vm.removePlatform(sheetPlatformId)
                         if (libraryPlatform == sheetPlatformId) libraryPlatform = null

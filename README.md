@@ -40,8 +40,9 @@ Versi: Gradle 8.13, AGP 8.11.1, Kotlin 2.2.0, Compose UI 1.9.0, Material 3 1.4.0
 - **Pustaka**: filter platform/favorit, pencarian, urutan (A–Z / terbaru / terakhir dimainkan), sampul lokal otomatis
   (`<nama-rom>.png|jpg|webp` di samping ROM atau di `media/`, `images/`, `boxart/`, `covers/`).
 - **Detail game** (bottom sheet): favorit, tombol Main, statistik, dan pilihan pemutar yang cocok dengan berkas.
-- **Platform**: tambah dari 122 platform bawaan, pilih folder ROM (pemilih folder atau ketik path), pindai otomatis,
-  pemutar bawaan per platform, impor JSON platform sendiri, tebakan folder otomatis (`ROMs/psx`, `Roms/Sony PlayStation`, ...).
+- **Platform**: tambah dari 122 platform bawaan, pilih aplikasi pemutar yang terpasang, pilih folder ROM (pemilih folder
+  atau ketik path), pindai otomatis, penanganan berkas lanjutan (default/standar/legacy), impor JSON platform sendiri,
+  tebakan folder otomatis (`ROMs/psx`, `Roms/Sony PlayStation`, ...).
 - **Aplikasi**: laci semua aplikasi dengan pencarian; tekan lama untuk info aplikasi.
 - **Pengaturan**: warna dinamis atau 8 warna aksen, jadikan aplikasi Home, akses semua berkas.
 - Bahasa: Inggris dan Indonesia (`values/`, `values-in/`).
@@ -57,6 +58,7 @@ Versi: Gradle 8.13, AGP 8.11.1, Kotlin 2.2.0, Compose UI 1.9.0, Material 3 1.4.0
 | `killPackageProcesses`, banyak pemutar per platform, pemutar bawaan per platform | Pemantauan folder (hanya pindai manual/otomatis saat tambah) |
 
 `{file.uri}` menghasilkan URI `content://` dari `FileProvider` milik Pijar dengan izin baca/tulis untuk emulator tujuan.
+Mode penanganan berkas per platform: **Default** mengikuti template, **Standard** memaksa `content://`, **Legacy** memakai path/`file://` mentah.
 
 ## Gestur sistem
 

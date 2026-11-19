@@ -57,6 +57,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.wakeupver.pijar.R
+import com.wakeupver.pijar.core.FileHandling
 import com.wakeupver.pijar.core.GameRecord
 import com.wakeupver.pijar.core.GameTitles
 import com.wakeupver.pijar.core.PlatformCatalog
@@ -91,9 +92,9 @@ fun GameSheet(
         if (platform == null) "" else PlayerPicker.choose(platform, config?.playerKey.orEmpty(), fileName)?.key.orEmpty()
     }
     val tags = remember(fileName) { GameTitles.tags(fileName).take(3) }
-    val installedPackages by produceState(initialValue = emptySet<String>(), players) {
+    val installedPackages by produceState(initialValue = emptySet<String>(), key1 = players) {
         value = withContext(Dispatchers.IO) {
-            players.mapNotNull { it.packageName }.filterTo(HashSet()) { Apps.isInstalled(context, it) }
+            players.mapNotNull { it.packageName }.distinct().filterTo(HashSet()) { Apps.isInstalled(context, it) }
         }
     }
 
@@ -272,7 +273,100 @@ fun AddPlatformSheet(
     }
 }
 
-/** Folder ROM, pemutar bawaan, pindai ulang, dan hapus platform. */
+/** Pilihan singkat setelah platform ditambahkan: hanya aplikasi pemutar yang terpasang. */
+@Composable
+fun ChoosePlayerSheet(
+    platform: PlatformDef,
+    config: PlatformConfig,
+    onSelectPlayer: (String) -> Unit,
+    onFileHandling: (FileHandling) -> Unit,
+    onManage: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val installed by produceState<Set<String>?>(initialValue = null, key1 = platform) {
+        value = withContext(Dispatchers.IO) {
+            platform.players.mapNotNull { it.packageName }.distinct().filterTo(HashSet()) { Apps.isInstalled(context, it) }
+        }
+    }
+    val installedPlayers = remember(platform, installed) {
+        val packages = installed ?: emptySet()
+        platform.players.filter { player -> player.packageName?.let { it in packages } == true }
+    }
+    var showAdvanced by remember { mutableStateOf(false) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = MaterialTheme.shapes.large,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 24.dp)
+                .navigationBarsPadding(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.sheet_choose_player_title),
+                style = MaterialTheme.typography.headlineSmall,
+            )
+            Text(
+                text = platform.name,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            when {
+                installed == null -> LoadingIndicator(modifier = Modifier.size(32.dp))
+                installedPlayers.isEmpty() -> Text(
+                    text = stringResource(R.string.sheet_choose_player_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                else -> {
+                    Text(
+                        text = stringResource(R.string.sheet_choose_player_installed, installedPlayers.size),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    ChoiceRow(
+                        title = stringResource(R.string.sheet_platform_player_auto),
+                        subtitle = null,
+                        selected = config.playerKey.isEmpty(),
+                        trailing = null,
+                        trailingColor = Color.Unspecified,
+                        onClick = { onSelectPlayer("") },
+                    )
+                    installedPlayers.forEach { player ->
+                        ChoiceRow(
+                            title = player.name,
+                            subtitle = player.packageName,
+                            selected = config.playerKey == player.key,
+                            trailing = null,
+                            trailingColor = Color.Unspecified,
+                            onClick = { onSelectPlayer(player.key) },
+                        )
+                    }
+                }
+            }
+            TextButton(onClick = { showAdvanced = !showAdvanced }) {
+                Text(stringResource(R.string.sheet_platform_file_handling))
+            }
+            if (showAdvanced) {
+                FileHandlingOptions(selected = config.fileHandling, onSelect = onFileHandling)
+            }
+            Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                TextButton(onClick = onManage) { Text(stringResource(R.string.library_platform_settings)) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_done)) }
+            }
+        }
+    }
+}
+
+/** Folder ROM, pemutar bawaan, penanganan berkas lanjutan, pindai ulang, dan hapus platform. */
 @Composable
 fun PlatformSettingsSheet(
     platform: PlatformDef,
@@ -282,6 +376,7 @@ fun PlatformSettingsSheet(
     onPickFolder: () -> Unit,
     onApplyFolder: (String) -> Unit,
     onSelectPlayer: (String) -> Unit,
+    onFileHandling: (FileHandling) -> Unit,
     onRemove: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -360,6 +455,9 @@ fun PlatformSettingsSheet(
                 )
             }
 
+            Text(text = stringResource(R.string.sheet_platform_file_handling), style = MaterialTheme.typography.titleMedium)
+            FileHandlingOptions(selected = config.fileHandling, onSelect = onFileHandling)
+
             TextButton(
                 onClick = {
                     if (confirmRemove) onRemove() else confirmRemove = true
@@ -373,6 +471,33 @@ fun PlatformSettingsSheet(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun FileHandlingOptions(
+    selected: FileHandling,
+    onSelect: (FileHandling) -> Unit,
+) {
+    FileHandling.entries.forEach { mode ->
+        val title = when (mode) {
+            FileHandling.DEFAULT -> R.string.file_handling_default
+            FileHandling.STANDARD -> R.string.file_handling_standard
+            FileHandling.LEGACY -> R.string.file_handling_legacy
+        }
+        val description = when (mode) {
+            FileHandling.DEFAULT -> R.string.file_handling_default_desc
+            FileHandling.STANDARD -> R.string.file_handling_standard_desc
+            FileHandling.LEGACY -> R.string.file_handling_legacy_desc
+        }
+        ChoiceRow(
+            title = stringResource(title),
+            subtitle = stringResource(description),
+            selected = selected == mode,
+            trailing = null,
+            trailingColor = Color.Unspecified,
+            onClick = { onSelect(mode) },
+        )
     }
 }
 

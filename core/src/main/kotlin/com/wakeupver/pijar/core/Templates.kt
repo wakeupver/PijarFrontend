@@ -10,12 +10,16 @@ class TemplateContext(
     val path: String,
     val mime: String = "application/octet-stream",
     val tags: Map<String, String> = emptyMap(),
+    /** Nilai `{file.path}`; default memakai path asli. */
+    private val pathProvider: () -> String = { path },
     private val uriProvider: () -> String,
 ) {
     internal val file: File by lazy(LazyThreadSafetyMode.NONE) { File(path) }
 
     var uriUsed: Boolean = false
         private set
+
+    fun filePath(): String = pathProvider()
 
     fun fileUri(): String {
         uriUsed = true
@@ -38,7 +42,7 @@ object Templates {
 
     private fun lookup(name: String, ctx: TemplateContext): String? {
         return when {
-            name == "file.path" -> ctx.path
+            name == "file.path" -> ctx.filePath()
             name == "file.uri" -> ctx.fileUri()
             name == "file.mime" -> ctx.mime
             name == "file.name" -> ctx.file.name

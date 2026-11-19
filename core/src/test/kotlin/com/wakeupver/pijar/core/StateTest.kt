@@ -8,7 +8,15 @@ class StateTest {
     @Test
     fun roundTrip() {
         val state = AppState(
-            platforms = listOf(PlatformConfig("psx", "/sdcard/ROMs/psx", "psx.duck|psx - Duckstation", 123)),
+            platforms = listOf(
+                PlatformConfig(
+                    platformId = "psx",
+                    folder = "/sdcard/ROMs/psx",
+                    playerKey = "psx.duck|psx - Duckstation",
+                    addedAt = 123,
+                    fileHandling = FileHandling.STANDARD,
+                ),
+            ),
             games = listOf(
                 GameRecord("id1", "psx", "/sdcard/ROMs/psx/A \"x\".iso", "A", 1, 2, 3, true, 4),
             ),
@@ -24,6 +32,12 @@ class StateTest {
         assertEquals("b", s.games[0].title)
         assertEquals(UiPrefs(), s.prefs)
         assertEquals(0, s.platforms.size)
+    }
+
+    @Test
+    fun unknownFileHandlingFallsBackToDefault() {
+        val s = StateCodec.decode("""{"platforms":[{"id":"psx","fileHandling":"unknown"}]}""")
+        assertEquals(FileHandling.DEFAULT, s.platforms.single().fileHandling)
     }
 
     @Test

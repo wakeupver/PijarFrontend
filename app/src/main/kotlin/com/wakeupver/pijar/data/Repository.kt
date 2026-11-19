@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.wakeupver.pijar.core.AppState
 import com.wakeupver.pijar.core.DaijishouFormat
+import com.wakeupver.pijar.core.FileHandling
 import com.wakeupver.pijar.core.LibraryMerge
 import com.wakeupver.pijar.core.LibraryScanner
 import com.wakeupver.pijar.core.PlatformCatalog
@@ -142,6 +143,10 @@ class Repository(private val context: Context) {
 
     fun setPlayer(id: String, playerKey: String) = update { s ->
         s.copy(platforms = s.platforms.map { if (it.platformId == id) it.copy(playerKey = playerKey) else it })
+    }
+
+    fun setFileHandling(id: String, fileHandling: FileHandling) = update { s ->
+        s.copy(platforms = s.platforms.map { if (it.platformId == id) it.copy(fileHandling = fileHandling) else it })
     }
 
     fun setPrefs(transform: (UiPrefs) -> UiPrefs) = update { s -> s.copy(prefs = transform(s.prefs)) }
