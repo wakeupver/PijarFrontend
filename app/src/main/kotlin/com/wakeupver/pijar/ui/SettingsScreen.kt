@@ -94,10 +94,10 @@ fun SettingsScreen(
                         headlineContent = { Text(def.name) },
                         supportingContent = {
                             Text(
-                                if (config.folder.isBlank()) {
-                                    stringResource(R.string.settings_no_folder)
-                                } else {
-                                    config.folder
+                                when {
+                                    !config.setupDone -> stringResource(R.string.settings_setup_incomplete)
+                                    config.folder.isBlank() -> stringResource(R.string.settings_no_folder)
+                                    else -> config.folder
                                 },
                                 maxLines = 1,
                             )

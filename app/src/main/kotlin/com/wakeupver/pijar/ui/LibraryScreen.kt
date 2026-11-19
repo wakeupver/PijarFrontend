@@ -72,14 +72,17 @@ fun LibraryScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val haptics = LocalHapticFeedback.current
 
-    val platforms = remember(state.platforms, catalog) { state.platforms.mapNotNull { catalog[it.platformId] } }
-    val selectedConfig = state.platforms.firstOrNull { it.platformId == selectedPlatform }
+    val readyConfigs = remember(state.platforms) { state.platforms.filter { it.setupDone } }
+    val readyIds = remember(readyConfigs) { readyConfigs.mapTo(HashSet()) { it.platformId } }
+    val platforms = remember(readyConfigs, catalog) { readyConfigs.mapNotNull { catalog[it.platformId] } }
+    val selectedConfig = readyConfigs.firstOrNull { it.platformId == selectedPlatform }
+    val visibleGames = remember(state.games, readyIds) { state.games.filter { it.platformId in readyIds } }
     // Urutkan sekali per perubahan pustaka/mode, bukan setiap ketikan pencarian.
-    val sortedGames = remember(state.games, sort) {
+    val sortedGames = remember(visibleGames, sort) {
         when (sort) {
-            1 -> state.games.sortedByDescending { it.addedAt }
-            2 -> state.games.sortedByDescending { it.lastPlayedAt }
-            else -> state.games.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
+            1 -> visibleGames.sortedByDescending { it.addedAt }
+            2 -> visibleGames.sortedByDescending { it.lastPlayedAt }
+            else -> visibleGames.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
         }
     }
     val games = remember(sortedGames, selectedPlatform, onlyFavorites, query) {

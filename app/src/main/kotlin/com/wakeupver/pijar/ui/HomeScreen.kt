@@ -78,13 +78,16 @@ fun HomeScreen(
     onGrantStorage: () -> Unit,
     contentPadding: PaddingValues,
 ) {
-    val platforms = remember(state.platforms, catalog) { state.platforms.mapNotNull { catalog[it.platformId] } }
-    val counts = remember(state.games) { state.games.groupingBy { it.platformId }.eachCount() }
-    val recent = remember(state.games) {
-        state.games.filter { it.lastPlayedAt > 0L }.sortedByDescending { it.lastPlayedAt }.take(12)
+    val readyConfigs = remember(state.platforms) { state.platforms.filter { it.setupDone } }
+    val readyIds = remember(readyConfigs) { readyConfigs.mapTo(HashSet()) { it.platformId } }
+    val platforms = remember(readyConfigs, catalog) { readyConfigs.mapNotNull { catalog[it.platformId] } }
+    val games = remember(state.games, readyIds) { state.games.filter { it.platformId in readyIds } }
+    val counts = remember(games) { games.groupingBy { it.platformId }.eachCount() }
+    val recent = remember(games) {
+        games.filter { it.lastPlayedAt > 0L }.sortedByDescending { it.lastPlayedAt }.take(12)
     }
-    val favorites = remember(state.games) {
-        state.games.filter { it.favorite }
+    val favorites = remember(games) {
+        games.filter { it.favorite }
             .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
             .take(20)
     }
@@ -104,7 +107,7 @@ fun HomeScreen(
         contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding() + 24.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        item { HomeHeader(platformCount = platforms.size, gameCount = state.games.size, edge = edge) }
+        item { HomeHeader(platformCount = platforms.size, gameCount = games.size, edge = edge) }
 
         if (!storageGranted) {
             item { StorageBanner(onGrant = onGrantStorage, edge = edge) }

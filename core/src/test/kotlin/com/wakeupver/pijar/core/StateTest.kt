@@ -15,6 +15,7 @@ class StateTest {
                     playerKey = "psx.duck|psx - Duckstation",
                     addedAt = 123,
                     fileHandling = FileHandling.STANDARD,
+                    setupDone = true,
                 ),
             ),
             games = listOf(
@@ -32,6 +33,12 @@ class StateTest {
         assertEquals("b", s.games[0].title)
         assertEquals(UiPrefs(), s.prefs)
         assertEquals(0, s.platforms.size)
+    }
+
+    @Test
+    fun legacyPlatformWithoutSetupFlagIsReady() {
+        val s = StateCodec.decode("""{"platforms":[{"id":"psx"}]}""")
+        assertEquals(true, s.platforms.single().setupDone)
     }
 
     @Test

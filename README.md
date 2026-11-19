@@ -40,9 +40,10 @@ Versi: Gradle 8.13, AGP 8.11.1, Kotlin 2.2.0, Compose UI 1.9.0, Material 3 1.4.0
 - **Pustaka**: filter platform/favorit, pencarian, urutan (A–Z / terbaru / terakhir dimainkan), sampul lokal otomatis
   (`<nama-rom>.png|jpg|webp` di samping ROM atau di `media/`, `images/`, `boxart/`, `covers/`).
 - **Detail game** (bottom sheet): favorit, tombol Main, statistik, dan pilihan pemutar yang cocok dengan berkas.
-- **Platform**: tambah dari 122 platform bawaan, pilih aplikasi pemutar yang terpasang, pilih folder ROM (pemilih folder
-  atau ketik path), pindai otomatis, penanganan berkas lanjutan (default/standar/legacy), impor JSON platform sendiri,
-  tebakan folder otomatis (`ROMs/psx`, `Roms/Sony PlayStation`, ...).
+- **Platform**: tambah dari 122 platform bawaan, lalu selesaikan setup (folder ROM dan aplikasi pemutar terpasang);
+  kartu platform baru muncul di Beranda/Pustaka setelah setup selesai. Pemilih folder atau path manual, pindai otomatis,
+  penanganan berkas lanjutan (default/standar/legacy), impor JSON platform sendiri, tebakan folder otomatis
+  (`ROMs/psx`, `Roms/Sony PlayStation`, ...).
 - **Aplikasi**: laci semua aplikasi dengan pencarian; tekan lama untuk info aplikasi.
 - **Pengaturan**: warna dinamis atau 8 warna aksen, jadikan aplikasi Home, akses semua berkas.
 - Bahasa: Inggris dan Indonesia (`values/`, `values-in/`).
@@ -86,7 +87,7 @@ untuk gestur; fungsinya hanya membuat Pijar tak bisa dicopot dan otomatis jadi H
 
 ```
 core/   Kotlin/JVM murni: JSON mini, parser data Daijishō, parser argumen `am start`, template, .dpt,
-        pemindai ROM, status aplikasi. Diuji di JVM (28 uji, termasuk seluruh data platform asli).
+        pemindai ROM, status aplikasi. Diuji di JVM (30 uji, termasuk seluruh data platform asli).
 app/    Aplikasi Android (Compose): data/ (Repository, Storage, Apps), launch/ (GameLauncher), ui/ (layar, sheet, tema).
         assets/daijishou/  salinan data platform Daijishō (MIT) + LICENSE.MD
 module/ Templat modul KernelSU/Magisk (APK disisipkan oleh CI)
@@ -100,7 +101,7 @@ Mengganti nama/ID paket: ubah `namespace` dan `applicationId` di `app/build.grad
 
 Sudah (di lingkungan pembuatan):
 
-- `core`: 28 uji unit lulus. Termasuk parsing 122 platform / 1.023 pemutar dari data asli, setiap argumen diterjemahkan ke Intent
+- `core`: 30 uji unit lulus. Termasuk parsing 122 platform / 1.023 pemutar dari data asli, setiap argumen diterjemahkan ke Intent
   tanpa peringatan, indeks konsisten dengan berkas.
 - Lapisan Android non-Compose (`GameLauncher`, `Storage`, `Apps`, `SystemUi`, `Repository`, `MainViewModel`) dikompilasi terhadap
   `android.jar` API 35 asli tanpa galat tipe.

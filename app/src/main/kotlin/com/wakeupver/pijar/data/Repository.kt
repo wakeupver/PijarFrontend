@@ -138,12 +138,23 @@ class Repository(private val context: Context) {
     }
 
     fun setFolder(id: String, folder: String) = update { s ->
-        s.copy(platforms = s.platforms.map { if (it.platformId == id) it.copy(folder = folder) else it })
+        s.copy(
+            platforms = s.platforms.map {
+                if (it.platformId == id) it.copy(folder = folder).withSetupReady() else it
+            },
+        )
     }
 
     fun setPlayer(id: String, playerKey: String) = update { s ->
-        s.copy(platforms = s.platforms.map { if (it.platformId == id) it.copy(playerKey = playerKey) else it })
+        s.copy(
+            platforms = s.platforms.map {
+                if (it.platformId == id) it.copy(playerKey = playerKey).withSetupReady() else it
+            },
+        )
     }
+
+    private fun PlatformConfig.withSetupReady(): PlatformConfig =
+        if (setupDone || (folder.isNotBlank() && playerKey.isNotBlank())) copy(setupDone = true) else this
 
     fun setFileHandling(id: String, fileHandling: FileHandling) = update { s ->
         s.copy(platforms = s.platforms.map { if (it.platformId == id) it.copy(fileHandling = fileHandling) else it })

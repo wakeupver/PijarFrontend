@@ -66,7 +66,7 @@ fun PijarRoot(vm: MainViewModel) {
     var libraryPlatform by rememberSaveable { mutableStateOf<String?>(null) }
     var gameSheetId by remember { mutableStateOf<String?>(null) }
     var platformSheetId by remember { mutableStateOf<String?>(null) }
-    var choosePlayerFor by remember { mutableStateOf<String?>(null) }
+    var setupPlatformFor by remember { mutableStateOf<String?>(null) }
     var showAddPlatform by remember { mutableStateOf(false) }
     var folderTarget by remember { mutableStateOf<String?>(null) }
     var storageGranted by remember { mutableStateOf(Storage.hasAllFilesAccess(context)) }
@@ -87,7 +87,7 @@ fun PijarRoot(vm: MainViewModel) {
             libraryPlatform = null
             gameSheetId = null
             platformSheetId = null
-            choosePlayerFor = null
+            setupPlatformFor = null
             showAddPlatform = false
         }
     }
@@ -124,6 +124,14 @@ fun PijarRoot(vm: MainViewModel) {
         )
     }
     val onSelectTab: (Int) -> Unit = remember { { tab = it } }
+    val openPlatformSettings: (String) -> Unit = { id ->
+        val config = state.platforms.firstOrNull { it.platformId == id }
+        if (config != null && !config.setupDone) {
+            setupPlatformFor = id
+        } else {
+            platformSheetId = id
+        }
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -173,7 +181,7 @@ fun PijarRoot(vm: MainViewModel) {
                         onSelectPlatform = { id -> libraryPlatform = id },
                         onOpenGame = { game -> gameSheetId = game.id },
                         onAddPlatform = { showAddPlatform = true },
-                        onPlatformSettings = { id -> platformSheetId = id },
+                        onPlatformSettings = openPlatformSettings,
                         onRescan = { id ->
                             if (id != null) vm.scan(id) else vm.scanAll()
                         },
@@ -196,7 +204,7 @@ fun PijarRoot(vm: MainViewModel) {
                         catalog = catalog,
                         isDefaultHome = isDefaultHome,
                         storageGranted = storageGranted,
-                        onOpenPlatform = { id -> platformSheetId = id },
+                        onOpenPlatform = openPlatformSettings,
                         onAddPlatform = { showAddPlatform = true },
                         onRescanAll = { vm.scanAll() },
                         onImport = {
@@ -245,27 +253,36 @@ fun PijarRoot(vm: MainViewModel) {
                 onPick = { def ->
                     vm.addPlatform(def.uniqueId)
                     showAddPlatform = false
-                    choosePlayerFor = def.uniqueId
+                    setupPlatformFor = def.uniqueId
                 },
                 onDismiss = { showAddPlatform = false },
             )
         }
 
-        val choosePlayerId = choosePlayerFor
-        if (choosePlayerId != null) {
-            val def = catalog[choosePlayerId]
-            val config = state.platforms.firstOrNull { it.platformId == choosePlayerId }
+        val setupPlatformId = setupPlatformFor
+        if (setupPlatformId != null) {
+            val def = catalog[setupPlatformId]
+            val config = state.platforms.firstOrNull { it.platformId == setupPlatformId }
             if (def != null && config != null) {
-                ChoosePlayerSheet(
+                SetupPlatformSheet(
                     platform = def,
                     config = config,
-                    onSelectPlayer = { key -> vm.setPlayer(choosePlayerId, key) },
-                    onFileHandling = { mode -> vm.setFileHandling(choosePlayerId, mode) },
-                    onManage = {
-                        choosePlayerFor = null
-                        platformSheetId = choosePlayerId
+                    onPickFolder = {
+                        folderTarget = setupPlatformId
+                        try {
+                            folderPicker.launch(null)
+                        } catch (e: ActivityNotFoundException) {
+                            folderTarget = null
+                            vm.notifyFolderUnsupported()
+                        }
                     },
-                    onDismiss = { choosePlayerFor = null },
+                    onSelectPlayer = { key -> vm.setPlayer(setupPlatformId, key) },
+                    onFileHandling = { mode -> vm.setFileHandling(setupPlatformId, mode) },
+                    onManage = {
+                        setupPlatformFor = null
+                        platformSheetId = setupPlatformId
+                    },
+                    onDismiss = { setupPlatformFor = null },
                 )
             }
         }

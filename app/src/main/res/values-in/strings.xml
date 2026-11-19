@@ -58,6 +58,7 @@
     <string name="settings_section_system">Sistem</string>
     <string name="settings_section_about">Tentang</string>
     <string name="settings_no_folder">Folder belum dipilih</string>
+    <string name="settings_setup_incomplete">Setup belum selesai</string>
     <string name="settings_rescan_all">Pindai ulang semua platform</string>
     <string name="settings_import">Impor JSON platform</string>
     <string name="settings_import_desc">Berkas platform berformat Daijishō</string>
@@ -83,9 +84,10 @@
     <string name="sheet_platform_player">Pemutar bawaan</string>
     <string name="sheet_platform_player_auto">Otomatis</string>
     <string name="sheet_platform_games_found">%1$d game di pustaka</string>
-    <string name="sheet_choose_player_title">Pilih aplikasi pemutar</string>
+    <string name="sheet_setup_platform_title">Setup platform</string>
+    <string name="sheet_setup_incomplete_hint">Pilih folder ROM dan aplikasi pemutar untuk menyelesaikan setup.</string>
     <string name="sheet_choose_player_installed">%1$d terpasang</string>
-    <string name="sheet_choose_player_empty">Belum ada aplikasi pemutar yang cocok dan terpasang. Pasang dulu, lalu buka Pengaturan platform.</string>
+    <string name="sheet_choose_player_empty">Belum ada aplikasi pemutar yang cocok dan terpasang. Pasang dulu, lalu buka lagi platform ini dari Pengaturan.</string>
     <string name="sheet_platform_file_handling">Penanganan berkas lanjutan</string>
     <string name="file_handling_default">Default</string>
     <string name="file_handling_default_desc">Ikuti template pemutar apa adanya</string>

@@ -273,11 +273,12 @@ fun AddPlatformSheet(
     }
 }
 
-/** Pilihan singkat setelah platform ditambahkan: hanya aplikasi pemutar yang terpasang. */
+/** Setup singkat setelah platform ditambahkan: folder ROM dan aplikasi pemutar yang terpasang. */
 @Composable
-fun ChoosePlayerSheet(
+fun SetupPlatformSheet(
     platform: PlatformDef,
     config: PlatformConfig,
+    onPickFolder: () -> Unit,
     onSelectPlayer: (String) -> Unit,
     onFileHandling: (FileHandling) -> Unit,
     onManage: () -> Unit,
@@ -311,13 +312,33 @@ fun ChoosePlayerSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = stringResource(R.string.sheet_choose_player_title),
+                text = stringResource(R.string.sheet_setup_platform_title),
                 style = MaterialTheme.typography.headlineSmall,
             )
             Text(
                 text = platform.name,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = stringResource(R.string.sheet_platform_folder),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                text = if (config.folder.isBlank()) stringResource(R.string.settings_no_folder) else config.folder,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            ExpressiveButton(
+                text = stringResource(R.string.action_choose_folder),
+                onClick = onPickFolder,
+                tonal = true,
+            )
+            Text(
+                text = stringResource(R.string.sheet_platform_player),
+                style = MaterialTheme.typography.titleMedium,
             )
             when {
                 installed == null -> LoadingIndicator(modifier = Modifier.size(32.dp))
@@ -331,14 +352,6 @@ fun ChoosePlayerSheet(
                         text = stringResource(R.string.sheet_choose_player_installed, installedPlayers.size),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    ChoiceRow(
-                        title = stringResource(R.string.sheet_platform_player_auto),
-                        subtitle = null,
-                        selected = config.playerKey.isEmpty(),
-                        trailing = null,
-                        trailingColor = Color.Unspecified,
-                        onClick = { onSelectPlayer("") },
                     )
                     installedPlayers.forEach { player ->
                         ChoiceRow(
@@ -358,9 +371,18 @@ fun ChoosePlayerSheet(
             if (showAdvanced) {
                 FileHandlingOptions(selected = config.fileHandling, onSelect = onFileHandling)
             }
+            if (!config.setupDone) {
+                Text(
+                    text = stringResource(R.string.sheet_setup_incomplete_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
                 TextButton(onClick = onManage) { Text(stringResource(R.string.library_platform_settings)) }
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_done)) }
+                TextButton(onClick = onDismiss, enabled = config.setupDone) {
+                    Text(stringResource(R.string.action_done))
+                }
             }
         }
     }

@@ -18,6 +18,7 @@ data class PlatformConfig(
     val playerKey: String = "",
     val addedAt: Long = 0L,
     val fileHandling: FileHandling = FileHandling.DEFAULT,
+    val setupDone: Boolean = false,
 )
 
 data class GameRecord(
@@ -62,6 +63,7 @@ object StateCodec {
                     "player" to it.playerKey,
                     "addedAt" to it.addedAt,
                     "fileHandling" to it.fileHandling.name,
+                    "setupDone" to it.setupDone,
                 )
             },
             "games" to state.games.map {
@@ -103,6 +105,7 @@ object StateCodec {
                     playerKey = o.string("player"),
                     addedAt = o.long("addedAt"),
                     fileHandling = FileHandling.from(o.string("fileHandling")),
+                    setupDone = o.bool("setupDone", true),
                 )
             }
         }

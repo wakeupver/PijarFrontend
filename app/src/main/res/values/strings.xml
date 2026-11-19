@@ -58,6 +58,7 @@
     <string name="settings_section_system">System</string>
     <string name="settings_section_about">About</string>
     <string name="settings_no_folder">No folder chosen</string>
+    <string name="settings_setup_incomplete">Setup not finished</string>
     <string name="settings_rescan_all">Rescan all platforms</string>
     <string name="settings_import">Import platform JSON</string>
     <string name="settings_import_desc">Platform files in Daijishō format</string>
@@ -83,9 +84,10 @@
     <string name="sheet_platform_player">Default player</string>
     <string name="sheet_platform_player_auto">Automatic</string>
     <string name="sheet_platform_games_found">%1$d games in library</string>
-    <string name="sheet_choose_player_title">Choose player app</string>
+    <string name="sheet_setup_platform_title">Setup platform</string>
+    <string name="sheet_setup_incomplete_hint">Choose a ROM folder and a player app to finish setup.</string>
     <string name="sheet_choose_player_installed">%1$d installed</string>
-    <string name="sheet_choose_player_empty">No compatible player app is installed yet. Install one, then open Platform settings.</string>
+    <string name="sheet_choose_player_empty">No compatible player app is installed yet. Install one, then reopen this platform from Settings.</string>
     <string name="sheet_platform_file_handling">Advanced file handling</string>
     <string name="file_handling_default">Default</string>
     <string name="file_handling_default_desc">Use the player template as written</string>
