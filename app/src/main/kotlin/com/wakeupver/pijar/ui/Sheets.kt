@@ -281,11 +281,12 @@ fun SetupPlatformSheet(
     onPickFolder: () -> Unit,
     onSelectPlayer: (String) -> Unit,
     onFileHandling: (FileHandling) -> Unit,
-    onManage: () -> Unit,
+    onDone: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val canFinish = config.folder.isNotBlank() && config.playerKey.isNotBlank()
     val installed by produceState<Set<String>?>(initialValue = null, key1 = platform) {
         value = withContext(Dispatchers.IO) {
             platform.players.mapNotNull { it.packageName }.distinct().filterTo(HashSet()) { Apps.isInstalled(context, it) }
@@ -371,7 +372,7 @@ fun SetupPlatformSheet(
             if (showAdvanced) {
                 FileHandlingOptions(selected = config.fileHandling, onSelect = onFileHandling)
             }
-            if (!config.setupDone) {
+            if (!canFinish) {
                 Text(
                     text = stringResource(R.string.sheet_setup_incomplete_hint),
                     style = MaterialTheme.typography.bodySmall,
@@ -379,8 +380,8 @@ fun SetupPlatformSheet(
                 )
             }
             Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                TextButton(onClick = onManage) { Text(stringResource(R.string.library_platform_settings)) }
-                TextButton(onClick = onDismiss, enabled = config.setupDone) {
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+                TextButton(onClick = onDone, enabled = canFinish) {
                     Text(stringResource(R.string.action_done))
                 }
             }

@@ -249,7 +249,7 @@ fun PijarRoot(vm: MainViewModel) {
         if (showAddPlatform) {
             AddPlatformSheet(
                 catalog = catalog,
-                added = state.platforms.map { it.platformId }.toSet(),
+                added = state.platforms.filter { it.setupDone }.map { it.platformId }.toSet(),
                 onPick = { def ->
                     vm.addPlatform(def.uniqueId)
                     showAddPlatform = false
@@ -278,11 +278,14 @@ fun PijarRoot(vm: MainViewModel) {
                     },
                     onSelectPlayer = { key -> vm.setPlayer(setupPlatformId, key) },
                     onFileHandling = { mode -> vm.setFileHandling(setupPlatformId, mode) },
-                    onManage = {
+                    onDone = {
+                        vm.completePlatformSetup(setupPlatformId)
                         setupPlatformFor = null
-                        platformSheetId = setupPlatformId
                     },
-                    onDismiss = { setupPlatformFor = null },
+                    onDismiss = {
+                        vm.discardPlatformSetup(setupPlatformId)
+                        setupPlatformFor = null
+                    },
                 )
             }
         }

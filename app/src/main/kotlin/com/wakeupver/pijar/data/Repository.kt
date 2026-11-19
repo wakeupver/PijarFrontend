@@ -138,23 +138,36 @@ class Repository(private val context: Context) {
     }
 
     fun setFolder(id: String, folder: String) = update { s ->
-        s.copy(
-            platforms = s.platforms.map {
-                if (it.platformId == id) it.copy(folder = folder).withSetupReady() else it
-            },
-        )
+        s.copy(platforms = s.platforms.map { if (it.platformId == id) it.copy(folder = folder) else it })
     }
 
     fun setPlayer(id: String, playerKey: String) = update { s ->
+        s.copy(platforms = s.platforms.map { if (it.platformId == id) it.copy(playerKey = playerKey) else it })
+    }
+
+    fun completeSetup(id: String) = update { s ->
         s.copy(
             platforms = s.platforms.map {
-                if (it.platformId == id) it.copy(playerKey = playerKey).withSetupReady() else it
+                if (it.platformId == id && it.folder.isNotBlank() && it.playerKey.isNotBlank()) {
+                    it.copy(setupDone = true)
+                } else {
+                    it
+                }
             },
         )
     }
 
-    private fun PlatformConfig.withSetupReady(): PlatformConfig =
-        if (setupDone || (folder.isNotBlank() && playerKey.isNotBlank())) copy(setupDone = true) else this
+    fun removeUnfinishedPlatform(id: String) = update { s ->
+        val config = s.platforms.firstOrNull { it.platformId == id }
+        if (config == null || config.setupDone) {
+            s
+        } else {
+            s.copy(
+                platforms = s.platforms.filterNot { it.platformId == id },
+                games = s.games.filterNot { it.platformId == id },
+            )
+        }
+    }
 
     fun setFileHandling(id: String, fileHandling: FileHandling) = update { s ->
         s.copy(platforms = s.platforms.map { if (it.platformId == id) it.copy(fileHandling = fileHandling) else it })
@@ -181,8 +194,12 @@ class Repository(private val context: Context) {
             val files = LibraryScanner.scan(File(config.folder), Rx.ci(def.acceptedFilenameRegex))
             val now = System.currentTimeMillis()
             update { s ->
-                val merged = LibraryMerge.merge(platformId, s.games, files, now)
-                s.copy(games = s.games.filterNot { it.platformId == platformId } + merged)
+                if (s.platforms.none { it.platformId == platformId }) {
+                    s
+                } else {
+                    val merged = LibraryMerge.merge(platformId, s.games, files, now)
+                    s.copy(games = s.games.filterNot { it.platformId == platformId } + merged)
+                }
             }
             files.size
         } finally {

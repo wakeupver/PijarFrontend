@@ -94,6 +94,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun removePlatform(id: String) = repo.removePlatform(id)
 
+    fun completePlatformSetup(id: String) = repo.completeSetup(id)
+
+    fun discardPlatformSetup(id: String) = repo.removeUnfinishedPlatform(id)
+
     fun setFolder(id: String, folder: String) {
         repo.setFolder(id, folder.trim())
         scan(id)

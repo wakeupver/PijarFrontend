@@ -41,9 +41,9 @@ Versi: Gradle 8.13, AGP 8.11.1, Kotlin 2.2.0, Compose UI 1.9.0, Material 3 1.4.0
   (`<nama-rom>.png|jpg|webp` di samping ROM atau di `media/`, `images/`, `boxart/`, `covers/`).
 - **Detail game** (bottom sheet): favorit, tombol Main, statistik, dan pilihan pemutar yang cocok dengan berkas.
 - **Platform**: tambah dari 122 platform bawaan, lalu selesaikan setup (folder ROM dan aplikasi pemutar terpasang);
-  kartu platform baru muncul di Beranda/Pustaka setelah setup selesai. Pemilih folder atau path manual, pindai otomatis,
-  penanganan berkas lanjutan (default/standar/legacy), impor JSON platform sendiri, tebakan folder otomatis
-  (`ROMs/psx`, `Roms/Sony PlayStation`, ...).
+  kartu platform baru muncul di Beranda/Pustaka setelah tombol Selesai ditekan, sedangkan Batal mengembalikan platform
+  ke daftar tambah. Pemilih folder atau path manual, pindai otomatis, penanganan berkas lanjutan (default/standar/legacy),
+  impor JSON platform sendiri, tebakan folder otomatis (`ROMs/psx`, `Roms/Sony PlayStation`, ...).
 - **Aplikasi**: laci semua aplikasi dengan pencarian; tekan lama untuk info aplikasi.
 - **Pengaturan**: warna dinamis atau 8 warna aksen, jadikan aplikasi Home, akses semua berkas.
 - Bahasa: Inggris dan Indonesia (`values/`, `values-in/`).
