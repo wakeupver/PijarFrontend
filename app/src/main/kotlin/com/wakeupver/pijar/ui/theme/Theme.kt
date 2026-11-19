@@ -40,7 +40,9 @@ fun PijarTheme(prefs: UiPrefs, content: @Composable () -> Unit) {
     val dark = isSystemInDarkTheme()
     val context = LocalContext.current
     val useDynamic = prefs.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-    val dynamicHue = if (useDynamic) systemAccentHue(context) else null
+    val dynamicHue = remember(useDynamic, context) {
+        if (useDynamic) systemAccentHue(context) else null
+    }
     val scheme = remember(prefs.accentHue, dynamicHue, dark) {
         tonalSpotScheme(dynamicHue ?: prefs.accentHue.toDouble(), dark)
     }
@@ -113,10 +115,14 @@ fun tonalSpotScheme(hue: Double, dark: Boolean): ColorScheme {
     )
 }
 
+private val accentCache = HashMap<Int, Pair<Color, Color>>()
+
 /** Warna primer dan on-primary Tonal Spot untuk pratinjau pilihan aksen di Pengaturan. */
-fun tonalSpotAccent(hue: Int): Pair<Color, Color> {
-    val scheme = tonalSpotScheme(hue.toDouble(), dark = false)
-    return scheme.primary to scheme.onPrimary
+fun tonalSpotAccent(hue: Int): Pair<Color, Color> = synchronized(accentCache) {
+    accentCache.getOrPut(hue) {
+        val scheme = tonalSpotScheme(hue.toDouble(), dark = false)
+        scheme.primary to scheme.onPrimary
+    }
 }
 
 /** Hue palet aksen utama sistem (Material You), bila tersedia. */

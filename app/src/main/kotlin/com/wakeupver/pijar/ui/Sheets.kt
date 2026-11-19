@@ -46,6 +46,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -64,6 +65,8 @@ import com.wakeupver.pijar.core.PlatformDef
 import com.wakeupver.pijar.core.PlayerDef
 import com.wakeupver.pijar.core.PlayerPicker
 import com.wakeupver.pijar.data.Apps
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 
 /** Detail game: sampul, favorit, tombol Main, statistik, dan pilihan pemutar yang cocok untuk berkas ini. */
@@ -88,6 +91,11 @@ fun GameSheet(
         if (platform == null) "" else PlayerPicker.choose(platform, config?.playerKey.orEmpty(), fileName)?.key.orEmpty()
     }
     val tags = remember(fileName) { GameTitles.tags(fileName).take(3) }
+    val installedPackages by produceState(initialValue = emptySet<String>(), players) {
+        value = withContext(Dispatchers.IO) {
+            players.mapNotNull { it.packageName }.filterTo(HashSet()) { Apps.isInstalled(context, it) }
+        }
+    }
 
     val lastPlayed = if (game.lastPlayedAt > 0L) {
         stringResource(
@@ -170,7 +178,7 @@ fun GameSheet(
                 Text(text = stringResource(R.string.game_players), style = MaterialTheme.typography.titleMedium)
                 players.forEach { player ->
                     val packageName = player.packageName
-                    val installed = packageName != null && Apps.isInstalled(context, packageName)
+                    val installed = packageName != null && packageName in installedPackages
                     ChoiceRow(
                         title = player.name,
                         subtitle = packageName,
@@ -198,10 +206,10 @@ fun AddPlatformSheet(
     var query by remember { mutableStateOf("") }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val results = remember(catalog, added, query) {
-        val q = query.trim().lowercase()
+        val q = query.trim()
         catalog.all.filter { def ->
             def.uniqueId !in added &&
-                (q.isEmpty() || def.name.lowercase().contains(q) || def.shortName.lowercase().contains(q))
+                (q.isEmpty() || def.name.contains(q, ignoreCase = true) || def.shortName.contains(q, ignoreCase = true))
         }
     }
 
@@ -236,7 +244,7 @@ fun AddPlatformSheet(
                 )
             } else {
                 LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp)) {
-                    items(results, key = { it.uniqueId }) { def ->
+                    items(results, key = { it.uniqueId }, contentType = { "platform" }) { def ->
                         ListItem(
                             headlineContent = { Text(def.name) },
                             supportingContent = {

@@ -12,6 +12,8 @@ class TemplateContext(
     val tags: Map<String, String> = emptyMap(),
     private val uriProvider: () -> String,
 ) {
+    internal val file: File by lazy(LazyThreadSafetyMode.NONE) { File(path) }
+
     var uriUsed: Boolean = false
         private set
 
@@ -35,15 +37,14 @@ object Templates {
     }
 
     private fun lookup(name: String, ctx: TemplateContext): String? {
-        val file = File(ctx.path)
         return when {
             name == "file.path" -> ctx.path
             name == "file.uri" -> ctx.fileUri()
             name == "file.mime" -> ctx.mime
-            name == "file.name" -> file.name
-            name == "file.basename" -> GameTitles.baseName(file.name)
-            name == "file.ext" -> file.extension
-            name == "file.dir" -> file.parent.orEmpty()
+            name == "file.name" -> ctx.file.name
+            name == "file.basename" -> GameTitles.baseName(ctx.file.name)
+            name == "file.ext" -> ctx.file.extension
+            name == "file.dir" -> ctx.file.parent.orEmpty()
             name.startsWith("tags.") -> {
                 val key = name.removePrefix("tags.")
                 ctx.tags[key]

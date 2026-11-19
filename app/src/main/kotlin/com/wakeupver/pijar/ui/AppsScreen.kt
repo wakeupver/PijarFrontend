@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -60,9 +61,10 @@ fun AppsScreen(
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val haptics = LocalHapticFeedback.current
     val filtered = remember(apps, query) {
-        val q = query.trim().lowercase()
-        if (q.isEmpty()) apps else apps.filter { it.label.lowercase().contains(q) }
+        val q = query.trim()
+        if (q.isEmpty()) apps else apps.filter { it.label.contains(q, ignoreCase = true) }
     }
 
     Column(modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection)) {
@@ -113,8 +115,8 @@ fun AppsScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                items(filtered, key = { it.packageName + "/" + it.activity }) { app ->
-                    AppTile(app = app, onLaunch = { onLaunch(app) }, onInfo = { onInfo(app) })
+                items(filtered, key = { it.key }, contentType = { "app" }) { app ->
+                    AppTile(app = app, haptics = haptics, onLaunch = { onLaunch(app) }, onInfo = { onInfo(app) })
                 }
             }
         }
@@ -122,9 +124,13 @@ fun AppsScreen(
 }
 
 @Composable
-private fun AppTile(app: AppEntry, onLaunch: () -> Unit, onInfo: () -> Unit) {
-    val image = remember(app) { app.icon.asImageBitmap() }
-    val haptics = LocalHapticFeedback.current
+private fun AppTile(
+    app: AppEntry,
+    haptics: HapticFeedback,
+    onLaunch: () -> Unit,
+    onInfo: () -> Unit,
+) {
+    val image = remember(app.icon) { app.icon.asImageBitmap() }
     Column(
         modifier = Modifier
             .clip(MaterialTheme.shapes.large)

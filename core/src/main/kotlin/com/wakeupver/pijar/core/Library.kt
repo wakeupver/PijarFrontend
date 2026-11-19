@@ -18,10 +18,20 @@ object Rx {
 }
 
 object Ids {
+    private val HEX = "0123456789abcdef".toCharArray()
+    private val SHA1 = ThreadLocal.withInitial { MessageDigest.getInstance("SHA-1") }
+
     fun game(platformId: String, path: String): String {
-        val md = MessageDigest.getInstance("SHA-1")
+        val md = SHA1.get()
+        md.reset()
         val bytes = md.digest("$platformId\n$path".toByteArray(Charsets.UTF_8))
-        return bytes.joinToString("") { String.format("%02x", it) }.substring(0, 16)
+        val out = CharArray(16)
+        for (i in 0 until 8) {
+            val b = bytes[i].toInt() and 0xFF
+            out[i * 2] = HEX[b ushr 4]
+            out[i * 2 + 1] = HEX[b and 0x0F]
+        }
+        return String(out)
     }
 }
 

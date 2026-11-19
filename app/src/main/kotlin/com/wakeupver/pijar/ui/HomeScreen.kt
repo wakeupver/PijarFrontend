@@ -37,11 +37,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
-import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,7 +50,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -61,16 +58,11 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.wakeupver.pijar.R
 import com.wakeupver.pijar.core.AppState
 import com.wakeupver.pijar.core.GameRecord
 import com.wakeupver.pijar.core.PlatformCatalog
 import com.wakeupver.pijar.core.PlatformDef
-import com.wakeupver.pijar.data.ArtFinder
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.io.File
 import java.util.Calendar
 
 @Composable
@@ -91,7 +83,9 @@ fun HomeScreen(
         state.games.filter { it.lastPlayedAt > 0L }.sortedByDescending { it.lastPlayedAt }.take(12)
     }
     val favorites = remember(state.games) {
-        state.games.filter { it.favorite }.sortedBy { it.title.lowercase() }.take(20)
+        state.games.filter { it.favorite }
+            .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
+            .take(20)
     }
 
     // Satu margin horizontal untuk seluruh isi Beranda (judul, kartu, carousel, rak) supaya tepinya sejajar.
@@ -293,7 +287,8 @@ private fun HeroCard(game: GameRecord, platform: PlatformDef?, edge: Dp, onOpen:
 @Composable
 private fun PlatformCard(def: PlatformDef, count: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = badgeColors(def.uniqueId)
-    val decoShape = PlatformShapes.forKey(def.uniqueId + "#deco").toShape()
+    val decoShape = PlatformShapes.shapeFor(def.uniqueId + "#deco")
+    val badge = remember(def.shortName) { def.shortName.uppercase().take(6) }
     Box(modifier = modifier.fillMaxSize().background(colors.first).clickable(onClick = onClick)) {
         Box(
             modifier = Modifier
@@ -304,7 +299,7 @@ private fun PlatformCard(def: PlatformDef, count: Int, onClick: () -> Unit, modi
                 .background(colors.second.copy(alpha = 0.12f)),
         )
         Text(
-            text = def.shortName.uppercase().take(6),
+            text = badge,
             color = colors.second,
             style = MaterialTheme.typography.displaySmall,
             maxLines = 1,
@@ -337,6 +332,7 @@ private fun GameShelf(
 ) {
     // Jendela rak = lebar teks judul. Sudut atasnya mengikuti sudut sampul game (shapes.large), jadi sampul yang
     // terpotong di margin tetap terlihat membulat; judul di bawah sampul dipotong lurus.
+    val haptics = LocalHapticFeedback.current
     val windowShape = ShelfWindowShape(MaterialTheme.shapes.large.topStart, ShelfCardWidth / GameArtAspectRatio)
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SectionHeader(text = title, horizontalPadding = edge)
@@ -344,10 +340,11 @@ private fun GameShelf(
             modifier = Modifier.padding(horizontal = edge).clip(windowShape),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            items(games, key = { it.id }) { game ->
+            items(games, key = { it.id }, contentType = { "game" }) { game ->
                 GameCard(
                     game = game,
                     platform = catalog[game.platformId],
+                    haptics = haptics,
                     onClick = { onOpen(game) },
                     onLongClick = { onOpen(game) },
                     modifier = Modifier.width(ShelfCardWidth),

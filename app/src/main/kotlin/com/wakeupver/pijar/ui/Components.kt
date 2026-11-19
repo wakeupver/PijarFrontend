@@ -53,15 +53,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
@@ -134,34 +135,38 @@ object PlatformShapes {
         MaterialShapes.Cookie12Sided,
     )
 
+    private val shapes: Map<RoundedPolygon, Shape> by lazy { polygons.associateWith { it.toShape() } }
+
     fun forKey(key: String): RoundedPolygon = polygons[(key.hashCode() and Int.MAX_VALUE) % polygons.size]
+
+    fun shapeFor(key: String): Shape = shapes.getValue(forKey(key))
 }
 
 /** Pasangan (latar, isi) yang stabil per platform, diambil dari skema warna aktif. */
 @Composable
 fun badgeColors(key: String): Pair<Color, Color> {
     val c = MaterialTheme.colorScheme
-    val options = listOf(
-        c.primaryContainer to c.onPrimaryContainer,
-        c.tertiaryContainer to c.onTertiaryContainer,
-        c.secondaryContainer to c.onSecondaryContainer,
-        c.primary to c.onPrimary,
-        c.tertiary to c.onTertiary,
-        c.secondary to c.onSecondary,
-    )
-    return options[(key.hashCode() and Int.MAX_VALUE) % options.size]
+    return when ((key.hashCode() and Int.MAX_VALUE) % 6) {
+        0 -> c.primaryContainer to c.onPrimaryContainer
+        1 -> c.tertiaryContainer to c.onTertiaryContainer
+        2 -> c.secondaryContainer to c.onSecondaryContainer
+        3 -> c.primary to c.onPrimary
+        4 -> c.tertiary to c.onTertiary
+        else -> c.secondary to c.onSecondary
+    }
 }
 
 @Composable
 fun PlatformBadge(shortName: String, key: String, size: Dp, modifier: Modifier = Modifier) {
-    val shape = PlatformShapes.forKey(key).toShape()
+    val shape = PlatformShapes.shapeFor(key)
     val colors = badgeColors(key)
+    val label = remember(shortName) { shortName.uppercase().take(4) }
     Box(
         modifier = modifier.size(size).clip(shape).background(colors.first),
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = shortName.uppercase().take(4),
+            text = label,
             color = colors.second,
             fontWeight = FontWeight.Black,
             fontSize = (size.value * 0.26f).sp,
@@ -202,11 +207,11 @@ const val GameArtAspectRatio = 0.8f
 fun GameCard(
     game: GameRecord,
     platform: PlatformDef?,
+    haptics: HapticFeedback,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val haptics = LocalHapticFeedback.current
     Column(
         modifier = modifier.combinedClickable(
             onClick = onClick,
@@ -251,7 +256,7 @@ fun ExpressiveButton(
     val pressed by source.collectIsPressedAsState()
     val radius by animateDpAsState(
         targetValue = if (pressed) 14.dp else 28.dp,
-        animationSpec = Motion.fastSpatial(),
+        animationSpec = ButtonRadiusSpec,
         label = "buttonRadius",
     )
     val shape = RoundedCornerShape(radius)
@@ -330,7 +335,7 @@ fun EmptyState(
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
 ) {
-    val shape = MaterialShapes.Cookie12Sided.toShape()
+    val shape = EmptyCookieShape
     Column(
         modifier = modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -366,6 +371,8 @@ fun EmptyState(
 data class NavItem(val label: String, val icon: ImageVector)
 
 // Spesifikasi dibagikan agar tidak membuat objek spring baru di setiap frame animasi.
+private val EmptyCookieShape by lazy { MaterialShapes.Cookie12Sided.toShape() }
+private val ButtonRadiusSpec: FiniteAnimationSpec<Dp> = Motion.fastSpatial<Dp>()
 private val NavPillExpansionSpec: FiniteAnimationSpec<Float> = Motion.defaultSpatial<Float>()
 private val NavPillFadeSpec: FiniteAnimationSpec<Float> = Motion.fastEffects<Float>()
 private val NavPillShape = RoundedCornerShape(28.dp)

@@ -45,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.wakeupver.pijar.R
@@ -69,20 +70,24 @@ fun LibraryScreen(
     var onlyFavorites by rememberSaveable { mutableStateOf(false) }
     var sort by rememberSaveable { mutableIntStateOf(0) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val haptics = LocalHapticFeedback.current
 
     val platforms = remember(state.platforms, catalog) { state.platforms.mapNotNull { catalog[it.platformId] } }
     val selectedConfig = state.platforms.firstOrNull { it.platformId == selectedPlatform }
-    val games = remember(state.games, selectedPlatform, onlyFavorites, query, sort) {
-        val q = query.trim().lowercase()
-        val filtered = state.games.filter { game ->
+    // Urutkan sekali per perubahan pustaka/mode, bukan setiap ketikan pencarian.
+    val sortedGames = remember(state.games, sort) {
+        when (sort) {
+            1 -> state.games.sortedByDescending { it.addedAt }
+            2 -> state.games.sortedByDescending { it.lastPlayedAt }
+            else -> state.games.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
+        }
+    }
+    val games = remember(sortedGames, selectedPlatform, onlyFavorites, query) {
+        val q = query.trim()
+        sortedGames.filter { game ->
             (selectedPlatform == null || game.platformId == selectedPlatform) &&
                 (!onlyFavorites || game.favorite) &&
-                (q.isEmpty() || game.title.lowercase().contains(q))
-        }
-        when (sort) {
-            1 -> filtered.sortedByDescending { it.addedAt }
-            2 -> filtered.sortedByDescending { it.lastPlayedAt }
-            else -> filtered.sortedBy { it.title.lowercase() }
+                (q.isEmpty() || game.title.contains(q, ignoreCase = true))
         }
     }
     val sortLabel = stringResource(
@@ -134,11 +139,12 @@ fun LibraryScreen(
                     leadingIcon = { Icon(Icons.Rounded.Favorite, contentDescription = null, modifier = Modifier.size(18.dp)) },
                 )
             }
-            items(platforms, key = { it.uniqueId }) { def ->
+            items(platforms, key = { it.uniqueId }, contentType = { "platform" }) { def ->
+                val chipLabel = remember(def.shortName) { def.shortName.uppercase() }
                 FilterChip(
                     selected = selectedPlatform == def.uniqueId,
                     onClick = { onSelectPlatform(def.uniqueId) },
-                    label = { Text(def.shortName.uppercase()) },
+                    label = { Text(chipLabel) },
                 )
             }
             item {
@@ -206,10 +212,11 @@ fun LibraryScreen(
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
-                items(games, key = { it.id }) { game ->
+                items(games, key = { it.id }, contentType = { "game" }) { game ->
                     GameCard(
                         game = game,
                         platform = catalog[game.platformId],
+                        haptics = haptics,
                         onClick = { onOpenGame(game) },
                         onLongClick = { onOpenGame(game) },
                     )

@@ -74,7 +74,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         lastAppsRefresh = now
         val app = getApplication<Application>()
         viewModelScope.launch(Dispatchers.IO) {
-            _apps.value = Apps.load(app)
+            _apps.value = Apps.load(app, _apps.value)
         }
     }
 

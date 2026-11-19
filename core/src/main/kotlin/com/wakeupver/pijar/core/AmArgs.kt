@@ -140,8 +140,8 @@ private fun invalid(opt: String, key: String, value: String): Nothing =
     throw IllegalArgumentException("Nilai $opt untuk '$key' tidak valid: $value")
 
 internal fun RawExtra.resolve(ctx: TemplateContext): Extra {
-    val first = Templates.expand(values.firstOrNull().orEmpty(), ctx)
-    val all = values.map { Templates.expand(it, ctx) }
+    val all = if (values.isEmpty()) emptyList() else values.map { Templates.expand(it, ctx) }
+    val first = all.firstOrNull().orEmpty()
     val value: ExtraValue = when (type) {
         ExtraType.STRING -> ExtraValue.Text(first)
         ExtraType.NULL_STRING -> ExtraValue.NullText

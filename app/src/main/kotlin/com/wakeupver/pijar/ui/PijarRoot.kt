@@ -122,7 +122,6 @@ fun PijarRoot(vm: MainViewModel) {
         )
     }
     val onSelectTab: (Int) -> Unit = remember { { tab = it } }
-    val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     val scrimAlpha = if (state.prefs.showWallpaper) 0.88f else 1f
 
     Surface(
@@ -134,6 +133,9 @@ fun PijarRoot(vm: MainViewModel) {
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             snackbarHost = { SnackbarHost(hostState = snackbar) },
             bottomBar = {
+                // Baca inset IME di scope bottomBar agar animasi keyboard hanya
+                // merekomposisi bilah navigasi, bukan seluruh layar.
+                val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
                 if (!imeVisible) {
                     Box(
                         modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 12.dp),

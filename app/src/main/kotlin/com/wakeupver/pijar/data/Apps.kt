@@ -15,28 +15,36 @@ data class AppEntry(
     val packageName: String,
     val activity: String,
     val icon: Bitmap,
-)
+) {
+    val key: String = "$packageName/$activity"
+}
 
 object Apps {
     private const val ICON_PX = 128
 
-    /** Semua aplikasi yang punya ikon peluncur (kecuali aplikasi ini), diurutkan menurut nama. */
-    fun load(context: Context): List<AppEntry> {
+    /**
+     * Semua aplikasi yang punya ikon peluncur (kecuali aplikasi ini), diurutkan menurut nama.
+     * Ikon dari [previous] dipakai ulang bila komponennya masih sama, sehingga refresh saat
+     * ON_RESUME tidak menggambar ulang semua ikon dan tidak membuat bitmap baru.
+     */
+    fun load(context: Context, previous: List<AppEntry> = emptyList()): List<AppEntry> {
         val pm = context.packageManager
         val query = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        val result = ArrayList<AppEntry>()
+        val oldIcons: Map<String, AppEntry> = if (previous.isEmpty()) emptyMap() else previous.associateBy { it.key }
+        val result = ArrayList<AppEntry>(previous.size)
         for (info in pm.queryIntentActivities(query, 0)) {
             val activity = info.activityInfo ?: continue
             if (activity.packageName == context.packageName) continue
             try {
+                val key = "${activity.packageName}/${activity.name}"
                 val label = info.loadLabel(pm).toString()
-                val icon = info.loadIcon(pm).toBitmapSquare(ICON_PX)
+                val icon = oldIcons[key]?.icon ?: info.loadIcon(pm).toBitmapSquare(ICON_PX)
                 result += AppEntry(label, activity.packageName, activity.name, icon)
             } catch (e: Exception) {
                 // Lewati aplikasi yang ikonnya gagal dimuat.
             }
         }
-        result.sortBy { it.label.lowercase() }
+        result.sortWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.label })
         return result
     }
 

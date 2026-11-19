@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
@@ -83,8 +84,11 @@ fun SettingsScreen(
             contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding() + 24.dp),
         ) {
             item { SettingsSection(stringResource(R.string.settings_section_platforms)) }
-            items(state.platforms.size) { index ->
-                val config = state.platforms[index]
+            items(
+                items = state.platforms,
+                key = { it.platformId },
+                contentType = { "platform" },
+            ) { config ->
                 val def = catalog[config.platformId]
                 if (def != null) {
                     ListItem(
