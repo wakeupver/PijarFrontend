@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -35,7 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
+import androidx.compose.material3.carousel.HorizontalUncontainedCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
@@ -152,27 +153,36 @@ fun HomeScreen(
                             }
                         },
                     )
+                    // Ukuran kartu platform harus sama berapa pun jumlah platformnya. Dulu dipakai
+                    // HorizontalMultiBrowseCarousel, yang memilih susunan kartu besar/sedang/kecil berdasarkan jumlah
+                    // item: sampai 3 platform muat 1 kartu besar + 1 yang mengintip, tapi mulai 4 platform berpindah
+                    // ke susunan 2 besar + 1 sedang + 1 kecil sehingga semua kartu menyusut.
+                    // HorizontalUncontainedCarousel selalu memakai lebar item yang tetap; kartu berikutnya hanya
+                    // mengintip dan terpotong di tepi kanan jendela.
                     key(platforms.size) {
-                        HorizontalMultiBrowseCarousel(
-                            state = rememberCarouselState { platforms.size },
-                            preferredItemWidth = 232.dp,
-                            // Jendela carousel = lebar teks judul; sudut potongnya sama dengan sudut kartu platform.
-                            modifier = Modifier
-                                .padding(horizontal = edge)
-                                .fillMaxWidth()
-                                .height(208.dp)
-                                .clip(MaterialTheme.shapes.extraLarge),
-                            itemSpacing = 10.dp,
-                        ) { index ->
-                            val def = platforms[index]
-                            PlatformCard(
-                                def = def,
-                                count = counts[def.uniqueId] ?: 0,
-                                haptics = haptics,
-                                onClick = { onOpenPlatform(def.uniqueId) },
-                                onLongClick = { onLongOpenPlatform(def.uniqueId) },
-                                modifier = Modifier.maskClip(MaterialTheme.shapes.extraLarge),
-                            )
+                        // Jendela carousel = lebar teks judul (dikurangi margin kiri-kanan).
+                        BoxWithConstraints(modifier = Modifier.padding(horizontal = edge).fillMaxWidth()) {
+                            val cardWidth = minOf(PlatformCardMaxWidth, maxWidth * PlatformCardWindowFraction)
+                            HorizontalUncontainedCarousel(
+                                state = rememberCarouselState { platforms.size },
+                                itemWidth = cardWidth,
+                                // Sudut potong jendela sama dengan sudut kartu platform.
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(208.dp)
+                                    .clip(MaterialTheme.shapes.extraLarge),
+                                itemSpacing = 10.dp,
+                            ) { index ->
+                                val def = platforms[index]
+                                PlatformCard(
+                                    def = def,
+                                    count = counts[def.uniqueId] ?: 0,
+                                    haptics = haptics,
+                                    onClick = { onOpenPlatform(def.uniqueId) },
+                                    onLongClick = { onLongOpenPlatform(def.uniqueId) },
+                                    modifier = Modifier.maskClip(MaterialTheme.shapes.extraLarge),
+                                )
+                            }
                         }
                     }
                 }
@@ -388,6 +398,15 @@ private fun GameShelf(
 }
 
 private val ShelfCardWidth = 132.dp
+
+/** Lebar kartu platform maksimum di carousel Beranda (sama dengan target lebar lama, 232dp). */
+private val PlatformCardMaxWidth = 232.dp
+
+/**
+ * Lebar kartu platform sebagai pecahan lebar jendela carousel. 0,68 adalah ukuran kartu besar yang tampil saat
+ * platform <= 3 (sisanya dipakai kartu berikutnya yang mengintip), supaya tampilannya tetap sama untuk semua jumlah.
+ */
+private const val PlatformCardWindowFraction = 0.68f
 
 /**
  * Bentuk potong jendela rak game. Sudut membulat hanya di area sampul (setinggi [coverHeight] dari atas);
