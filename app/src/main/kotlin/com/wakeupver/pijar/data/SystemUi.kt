@@ -2,6 +2,7 @@ package com.wakeupver.pijar.data
 
 import android.app.role.RoleManager
 import android.content.ActivityNotFoundException
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -36,4 +37,15 @@ object SystemUi {
         }
         return Intent(Settings.ACTION_HOME_SETTINGS)
     }
+
+    fun isAccessibilityServiceEnabled(context: Context, service: Class<*>): Boolean {
+        val expected = ComponentName(context, service)
+        val enabled = Settings.Secure.getString(
+            context.contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+        ).orEmpty()
+        return enabled.split(':').any { ComponentName.unflattenFromString(it) == expected }
+    }
+
+    fun accessibilitySettingsIntent(): Intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
 }

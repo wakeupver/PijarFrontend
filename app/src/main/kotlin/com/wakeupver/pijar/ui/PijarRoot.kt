@@ -51,6 +51,7 @@ import com.wakeupver.pijar.R
 import com.wakeupver.pijar.data.Apps
 import com.wakeupver.pijar.data.Storage
 import com.wakeupver.pijar.data.SystemUi
+import com.wakeupver.pijar.gamepad.PijarAccessibilityService
 
 private const val TAB_HOME = 0
 private const val TAB_LIBRARY = 1
@@ -89,10 +90,14 @@ fun PijarRoot(vm: MainViewModel) {
     var folderTarget by remember { mutableStateOf<String?>(null) }
     var storageGranted by remember { mutableStateOf(Storage.hasAllFilesAccess(context)) }
     var isDefaultHome by remember { mutableStateOf(SystemUi.isDefaultHome(context)) }
+    var accessibilityEnabled by remember {
+        mutableStateOf(SystemUi.isAccessibilityServiceEnabled(context, PijarAccessibilityService::class.java))
+    }
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         storageGranted = Storage.hasAllFilesAccess(context)
         isDefaultHome = SystemUi.isDefaultHome(context)
+        accessibilityEnabled = SystemUi.isAccessibilityServiceEnabled(context, PijarAccessibilityService::class.java)
         vm.refreshApps()
     }
     LaunchedEffect(Unit) {
@@ -247,6 +252,17 @@ fun PijarRoot(vm: MainViewModel) {
                         },
                         onDynamicColor = { enabled -> vm.setDynamicColor(enabled) },
                         onAccent = { hue -> vm.setAccentHue(hue) },
+                        accessibilityEnabled = accessibilityEnabled,
+                        onVirtualGamepad = { enabled ->
+                            vm.setVirtualGamepad(enabled)
+                            if (enabled && !accessibilityEnabled) {
+                                SystemUi.openSafely(context, SystemUi.accessibilitySettingsIntent())
+                            }
+                        },
+                        onOpenAccessibility = {
+                            SystemUi.openSafely(context, SystemUi.accessibilitySettingsIntent())
+                        },
+                        onRecalibrateGamepad = { vm.recalibrateGamepad() },
                         isScraping = scraping.isNotEmpty(),
                         onScrapeAll = { vm.scrapeAll() },
                         onRequestHome = {

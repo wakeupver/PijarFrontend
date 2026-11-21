@@ -67,6 +67,10 @@ fun SettingsScreen(
     onImport: () -> Unit,
     onDynamicColor: (Boolean) -> Unit,
     onAccent: (Int) -> Unit,
+    accessibilityEnabled: Boolean,
+    onVirtualGamepad: (Boolean) -> Unit,
+    onOpenAccessibility: () -> Unit,
+    onRecalibrateGamepad: () -> Unit,
     isScraping: Boolean,
     onScrapeAll: () -> Unit,
     onRequestHome: () -> Unit,
@@ -202,6 +206,45 @@ fun SettingsScreen(
                         }
                     }
                 }
+            }
+            item { SettingsSection(stringResource(R.string.settings_section_controller)) }
+            item {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.settings_virtual_gamepad)) },
+                    supportingContent = {
+                        Text(
+                            stringResource(
+                                if (state.prefs.virtualGamepad && !accessibilityEnabled) {
+                                    R.string.settings_virtual_gamepad_needs_accessibility
+                                } else {
+                                    R.string.settings_virtual_gamepad_desc
+                                },
+                            ),
+                        )
+                    },
+                    trailingContent = {
+                        Switch(
+                            checked = state.prefs.virtualGamepad,
+                            onCheckedChange = onVirtualGamepad,
+                        )
+                    },
+                    colors = transparent,
+                    modifier = Modifier.clickable {
+                        if (state.prefs.virtualGamepad && !accessibilityEnabled) onOpenAccessibility()
+                    },
+                )
+            }
+            item {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.settings_virtual_gamepad_recalibrate)) },
+                    supportingContent = { Text(stringResource(R.string.settings_virtual_gamepad_recalibrate_desc)) },
+                    leadingContent = { Icon(Icons.Rounded.Refresh, contentDescription = null) },
+                    colors = transparent,
+                    modifier = Modifier.clickable(
+                        enabled = state.prefs.virtualGamepad,
+                        onClick = onRecalibrateGamepad,
+                    ),
+                )
             }
             item { SettingsSection(stringResource(R.string.settings_section_scraper)) }
             item {
