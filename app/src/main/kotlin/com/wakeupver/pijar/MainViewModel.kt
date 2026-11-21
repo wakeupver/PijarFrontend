@@ -17,9 +17,6 @@ import com.wakeupver.pijar.data.Apps
 import com.wakeupver.pijar.data.CoverCache
 import com.wakeupver.pijar.data.Repository
 import com.wakeupver.pijar.data.Storage
-import com.wakeupver.pijar.data.SystemUi
-import com.wakeupver.pijar.gamepad.GamepadService
-import com.wakeupver.pijar.gamepad.RootAccess
 import com.wakeupver.pijar.launch.GameLauncher
 import com.wakeupver.pijar.launch.LaunchException
 import kotlinx.coroutines.Dispatchers
@@ -176,11 +173,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setAccentHue(hue: Int) = repo.setPrefs { it.copy(accentHue = hue) }
 
-    fun setVirtualGamepad(enabled: Boolean) {
-        repo.setPrefs { it.copy(virtualGamepad = enabled) }
-        if (!enabled) GamepadService.stop(getApplication())
-    }
-
     fun notifyFolderUnsupported() = say(R.string.msg_folder_unsupported)
 
     fun notifyImportFailed(reason: String) = say(R.string.msg_import_failed, reason)
@@ -214,22 +206,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             say(R.string.msg_no_player)
             return
         }
-        val gamepadEnabled = state.value.prefs.virtualGamepad
         try {
             GameLauncher.launch(context, game, player, config?.fileHandling ?: FileHandling.DEFAULT)
             repo.markPlayed(game.id)
-            if (gamepadEnabled) {
-                val app = getApplication<Application>()
-                viewModelScope.launch {
-                    val overlayReady = SystemUi.canDrawOverlays(app)
-                    val rootReady = withContext(Dispatchers.IO) { RootAccess.available() }
-                    when {
-                        !overlayReady -> say(R.string.msg_gamepad_overlay_permission)
-                        !rootReady -> say(R.string.msg_gamepad_root_missing)
-                        else -> GamepadService.start(app)
-                    }
-                }
-            }
         } catch (e: LaunchException) {
             when (e.reason) {
                 LaunchException.Reason.FILE_MISSING -> say(R.string.msg_launch_missing, e.detail)

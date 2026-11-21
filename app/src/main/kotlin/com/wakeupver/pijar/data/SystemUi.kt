@@ -5,7 +5,6 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 
@@ -37,9 +36,4 @@ object SystemUi {
         }
         return Intent(Settings.ACTION_HOME_SETTINGS)
     }
-
-    fun canDrawOverlays(context: Context): Boolean = Settings.canDrawOverlays(context)
-
-    fun overlaySettingsIntent(context: Context): Intent =
-        Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
 }

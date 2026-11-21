@@ -38,7 +38,6 @@ data class UiPrefs(
     val dynamicColor: Boolean = true,
     /** Hue aksen (0..359) saat warna dinamis mati. */
     val accentHue: Int = 265,
-    val virtualGamepad: Boolean = false,
     val scrape: ScrapeSettings = ScrapeSettings,
 )
 
@@ -58,7 +57,6 @@ object StateCodec {
             "prefs" to linkedMapOf<String, Any?>(
                 "dynamicColor" to state.prefs.dynamicColor,
                 "accentHue" to state.prefs.accentHue,
-                "virtualGamepad" to state.prefs.virtualGamepad,
                 "scrape" to linkedMapOf<String, Any?>(),
             ),
             "platforms" to state.platforms.map {
@@ -98,7 +96,6 @@ object StateCodec {
             UiPrefs(
                 dynamicColor = p.bool("dynamicColor", true),
                 accentHue = p.int("accentHue", 265).coerceIn(0, 359),
-                virtualGamepad = p.bool("virtualGamepad", false),
                 scrape = ScrapeSettings,
             )
         }

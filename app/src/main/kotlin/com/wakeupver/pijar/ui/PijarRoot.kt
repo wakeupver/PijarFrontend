@@ -89,12 +89,10 @@ fun PijarRoot(vm: MainViewModel) {
     var folderTarget by remember { mutableStateOf<String?>(null) }
     var storageGranted by remember { mutableStateOf(Storage.hasAllFilesAccess(context)) }
     var isDefaultHome by remember { mutableStateOf(SystemUi.isDefaultHome(context)) }
-    var overlayGranted by remember { mutableStateOf(SystemUi.canDrawOverlays(context)) }
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         storageGranted = Storage.hasAllFilesAccess(context)
         isDefaultHome = SystemUi.isDefaultHome(context)
-        overlayGranted = SystemUi.canDrawOverlays(context)
         vm.refreshApps()
     }
     LaunchedEffect(Unit) {
@@ -249,13 +247,6 @@ fun PijarRoot(vm: MainViewModel) {
                         },
                         onDynamicColor = { enabled -> vm.setDynamicColor(enabled) },
                         onAccent = { hue -> vm.setAccentHue(hue) },
-                        overlayGranted = overlayGranted,
-                        onVirtualGamepad = { enabled ->
-                            vm.setVirtualGamepad(enabled)
-                            if (enabled && !overlayGranted) {
-                                SystemUi.openSafely(context, SystemUi.overlaySettingsIntent(context))
-                            }
-                        },
                         isScraping = scraping.isNotEmpty(),
                         onScrapeAll = { vm.scrapeAll() },
                         onRequestHome = {

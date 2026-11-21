@@ -8,7 +8,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.wakeupver.pijar.gamepad.GamepadService
 import com.wakeupver.pijar.ui.PijarRoot
 import com.wakeupver.pijar.ui.theme.PijarTheme
 
@@ -29,11 +28,6 @@ class MainActivity : ComponentActivity() {
                 PijarRoot(vm)
             }
         }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        GamepadService.stop(this)
     }
 
     override fun onNewIntent(intent: Intent) {

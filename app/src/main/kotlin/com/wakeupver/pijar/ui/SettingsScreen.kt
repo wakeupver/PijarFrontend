@@ -67,8 +67,6 @@ fun SettingsScreen(
     onImport: () -> Unit,
     onDynamicColor: (Boolean) -> Unit,
     onAccent: (Int) -> Unit,
-    overlayGranted: Boolean,
-    onVirtualGamepad: (Boolean) -> Unit,
     isScraping: Boolean,
     onScrapeAll: () -> Unit,
     onRequestHome: () -> Unit,
@@ -204,30 +202,6 @@ fun SettingsScreen(
                         }
                     }
                 }
-            }
-            item { SettingsSection(stringResource(R.string.settings_section_controller)) }
-            item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.settings_virtual_gamepad)) },
-                    supportingContent = {
-                        Text(
-                            stringResource(
-                                if (state.prefs.virtualGamepad && !overlayGranted) {
-                                    R.string.settings_virtual_gamepad_needs_setup
-                                } else {
-                                    R.string.settings_virtual_gamepad_desc
-                                },
-                            ),
-                        )
-                    },
-                    trailingContent = {
-                        Switch(
-                            checked = state.prefs.virtualGamepad,
-                            onCheckedChange = onVirtualGamepad,
-                        )
-                    },
-                    colors = transparent,
-                )
             }
             item { SettingsSection(stringResource(R.string.settings_section_scraper)) }
             item {
