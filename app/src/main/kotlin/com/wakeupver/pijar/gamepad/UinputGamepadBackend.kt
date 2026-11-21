@@ -1,7 +1,7 @@
 package com.wakeupver.pijar.gamepad
 
-import java.io.BufferedReader
 import java.io.BufferedWriter
+import java.io.File
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.util.concurrent.LinkedBlockingQueue
@@ -15,6 +15,7 @@ enum class GamepadStickSide(val xAxis: String, val yAxis: String) {
 
 interface GamepadBackend {
     val isRunning: Boolean
+    val lastError: String?
     fun start(): Boolean
     fun setButton(control: GamepadControl, pressed: Boolean)
     fun setStick(side: GamepadStickSide, x: Float, y: Float)
@@ -35,6 +36,7 @@ object RootAccess {
 
 class UinputGamepadBackend : GamepadBackend {
     private val responses = LinkedBlockingQueue<String>()
+    private val errors = LinkedBlockingQueue<String>()
     private val buttonStates = LinkedHashMap<String, Int>()
     private val axisStates = LinkedHashMap<String, Int>()
     private val dpadPressed = HashSet<String>()
@@ -45,18 +47,25 @@ class UinputGamepadBackend : GamepadBackend {
     override var isRunning: Boolean = false
         private set
 
+    @Volatile
+    override var lastError: String? = null
+        private set
+
     override fun start(): Boolean {
         if (isRunning) return true
         return try {
-            val started = Runtime.getRuntime().exec(arrayOf("su", "-c", "uinput -"))
+            val binary = if (File("/system/bin/uinput").exists()) "/system/bin/uinput" else "uinput"
+            val started = Runtime.getRuntime().exec(arrayOf("su", "-c", "$binary -"))
             process = started
             input = BufferedWriter(OutputStreamWriter(started.outputStream, Charsets.UTF_8))
             responses.clear()
+            errors.clear()
+            lastError = null
             startReader(started.inputStream)
-            startReader(started.errorStream, drainOnly = true)
+            startReader(started.errorStream, errorStream = true)
             write(registerCommand())
             write(syncCommand())
-            if (!waitForSync(2_000L)) {
+            if (!waitForSync(3_000L)) {
                 stop()
                 return false
             }
@@ -117,15 +126,39 @@ class UinputGamepadBackend : GamepadBackend {
         axisStates.clear()
         dpadPressed.clear()
         responses.clear()
+        errors.clear()
     }
 
-    private fun startReader(stream: java.io.InputStream, drainOnly: Boolean = false) {
+    private fun startReader(stream: java.io.InputStream, errorStream: Boolean = false) {
         Thread {
+            val pending = StringBuilder()
+            var depth = 0
             try {
-                BufferedReader(InputStreamReader(stream, Charsets.UTF_8)).useLines { lines ->
-                    lines.forEach { line ->
-                        if (!drainOnly) responses.offer(line)
+                InputStreamReader(stream, Charsets.UTF_8).use { reader ->
+                    val buffer = CharArray(1024)
+                    while (true) {
+                        val read = reader.read(buffer)
+                        if (read == -1) break
+                        for (index in 0 until read) {
+                            val char = buffer[index]
+                            if (char == '{') depth++
+                            pending.append(char)
+                            when {
+                                char == '}' && depth > 0 -> {
+                                    depth--
+                                    if (depth == 0) {
+                                        deliver(pending.toString(), errorStream)
+                                        pending.setLength(0)
+                                    }
+                                }
+                                char == '\n' && depth == 0 -> {
+                                    deliver(pending.toString(), errorStream)
+                                    pending.setLength(0)
+                                }
+                            }
+                        }
                     }
+                    if (pending.isNotBlank()) deliver(pending.toString(), errorStream)
                 }
             } catch (_: Exception) {
             }
@@ -133,6 +166,12 @@ class UinputGamepadBackend : GamepadBackend {
             isDaemon = true
             start()
         }
+    }
+
+    private fun deliver(raw: String, errorStream: Boolean) {
+        val text = raw.trim()
+        if (text.isEmpty()) return
+        if (errorStream) errors.offer(text) else responses.offer(text)
     }
 
     private fun updateDpad(id: String, pressed: Boolean) {
@@ -181,10 +220,18 @@ class UinputGamepadBackend : GamepadBackend {
 
     private fun waitForSync(timeoutMs: Long): Boolean {
         val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMs)
-        while (System.nanoTime() < deadline) {
-            val line = responses.poll(deadline - System.nanoTime(), TimeUnit.NANOSECONDS) ?: continue
-            if (line.contains("sync") && line.contains(SYNC_TOKEN)) return true
+        while (true) {
+            errors.poll()?.let { lastError = it.take(160) }
+            val remaining = deadline - System.nanoTime()
+            if (remaining <= 0) break
+            val response = responses.poll(remaining, TimeUnit.NANOSECONDS) ?: continue
+            if (response.contains("syncToken") && response.contains(SYNC_TOKEN)) {
+                lastError = null
+                return true
+            }
+            lastError = response.take(160)
         }
+        if (lastError.isNullOrBlank()) lastError = "no sync response from uinput"
         return false
     }
 

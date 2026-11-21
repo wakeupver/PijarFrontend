@@ -34,7 +34,13 @@ class GamepadService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground(NOTIFICATION_ID, buildNotification())
         if (!backend.start()) {
-            Toast.makeText(this, R.string.msg_gamepad_root_failed, Toast.LENGTH_SHORT).show()
+            val detail = backend.lastError
+            val message = if (detail.isNullOrBlank()) {
+                getString(R.string.msg_gamepad_root_failed)
+            } else {
+                getString(R.string.msg_gamepad_root_failed_detail, detail)
+            }
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
             stopSelf()
             return START_NOT_STICKY
         }

@@ -160,5 +160,6 @@
     <string name="msg_gamepad_overlay_permission">Grant overlay permission to use the virtual gamepad.</string>
     <string name="msg_gamepad_root_missing">Root access is required to create the virtual gamepad.</string>
     <string name="msg_gamepad_root_failed">Could not start the virtual gamepad. Check root and the uinput tool.</string>
+    <string name="msg_gamepad_root_failed_detail">Could not start the virtual gamepad: %1$s</string>
     <string name="msg_gamepad_overlay_failed">Could not draw the gamepad controls. Check overlay permission.</string>
 </resources>

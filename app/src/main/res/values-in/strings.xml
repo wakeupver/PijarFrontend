@@ -160,5 +160,6 @@
     <string name="msg_gamepad_overlay_permission">Berikan izin overlay untuk memakai gamepad virtual.</string>
     <string name="msg_gamepad_root_missing">Akses root diperlukan untuk membuat gamepad virtual.</string>
     <string name="msg_gamepad_root_failed">Gamepad virtual gagal dimulai. Periksa root dan perkakas uinput.</string>
+    <string name="msg_gamepad_root_failed_detail">Gamepad virtual gagal dimulai: %1$s</string>
     <string name="msg_gamepad_overlay_failed">Kontrol gamepad gagal ditampilkan. Periksa izin overlay.</string>
 </resources>
