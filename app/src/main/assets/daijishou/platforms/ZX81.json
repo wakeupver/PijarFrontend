@@ -8,7 +8,6 @@
     "description": null,
     "acceptedFilenameRegex": "^(?!(?:\\._|\\.).*).*$",
     "scraperSourceList": [
-      "LIBRETRO:Sinclair - ZX 81"
     ],
     "boxArtAspectRatioId": 0,
     "useCustomBoxArtAspectRatio": true,

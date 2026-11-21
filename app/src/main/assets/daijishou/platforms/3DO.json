@@ -8,7 +8,6 @@
     "description": null,
     "acceptedFilenameRegex": "^(?!(?:\\._|\\.).*).*$",
     "scraperSourceList": [
-      "LIBRETRO:The 3DO Company - 3DO"
     ],
     "boxArtAspectRatioId": 0,
     "useCustomBoxArtAspectRatio": false,

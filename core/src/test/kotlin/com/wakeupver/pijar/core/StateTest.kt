@@ -32,7 +32,7 @@ class StateTest {
                     true,
                     4,
                     GameMetadata(
-                        source = ScrapeSource.LIBRETRO,
+                        source = ScrapeSource.SCREENSCRAPER,
                         title = "A",
                         overview = "Ringkasan",
                         releaseDate = "1995",
@@ -46,7 +46,7 @@ class StateTest {
             prefs = UiPrefs(
                 dynamicColor = false,
                 accentHue = 120,
-                scrape = ScrapeSettings,
+                scrape = ScrapeSettings(devId = "42", devPassword = "secret", softName = "Pijar", userId = "me", userPassword = "pass"),
             ),
         )
         assertEquals(state, StateCodec.decode(StateCodec.encode(state)))
@@ -76,9 +76,9 @@ class StateTest {
     @Test
     fun scrapeStateIsTolerant() {
         val s = StateCodec.decode(
-            """{"games":[{"id":"x","platform":"psx","path":"/a.iso","metadata":{"source":"igdb","genres":["Action"],"coverUrl":"https://example.test/x.png"}}],"prefs":{"scrape":{"enabledSources":["libretro","unknown"]}}}""",
+            """{"games":[{"id":"x","platform":"psx","path":"/a.iso","metadata":{"source":"igdb","genres":["Action"],"coverUrl":"https://example.test/x.png"}}],"prefs":{"scrape":{"devId":"7","softName":"Other","enabledSources":["screenscraper","unknown"]}}}""",
         )
-        assertEquals(ScrapeSettings, s.prefs.scrape)
+        assertEquals(ScrapeSettings(devId = "7", softName = "Other"), s.prefs.scrape)
         val metadata = s.games.single().metadata
         assertNull(metadata.source)
         assertEquals(listOf("Action"), metadata.genres)

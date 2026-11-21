@@ -45,7 +45,7 @@ Versi: Gradle 8.13, AGP 8.11.1, Kotlin 2.2.0, Compose UI 1.9.0, Material 3 1.4.0
   ke daftar tambah. Pemilih folder atau path manual, pindai otomatis, penanganan berkas lanjutan (default/standar/legacy),
   impor JSON platform sendiri, tebakan folder otomatis (`ROMs/psx`, `Roms/Sony PlayStation`, ...).
 - **Aplikasi**: laci semua aplikasi dengan pencarian; tekan lama untuk info aplikasi.
-- **Scraper**: metadata dan sampul dari Libretro; bisa per game, semua game, atau otomatis saat pindai ROM.
+- **Scraper**: metadata dan sampul dari ScreenScraper.fr dengan kredensial pengguna; bisa per game, semua game, atau otomatis saat pindai ROM.
 - **Pengaturan**: warna dinamis atau 8 warna aksen, jadikan aplikasi Home, akses semua berkas.
 - Bahasa: Inggris dan Indonesia (`values/`, `values-in/`).
 
@@ -53,8 +53,8 @@ Versi: Gradle 8.13, AGP 8.11.1, Kotlin 2.2.0, Compose UI 1.9.0, Material 3 1.4.0
 
 | Didukung | Belum |
 | --- | --- |
-| Berkas platform JSON, regex nama berkas, dan `scraperSourceList` Libretro | Scraper DSESS |
-| Metadata/sampul online dari Libretro | Pencarian berbasis CRC |
+| Berkas platform JSON, regex nama berkas, dan `scraperSourceList` ScreenScraper | Scraper DSESS |
+| Metadata/sampul online dari ScreenScraper.fr | Pencarian berbasis CRC |
 | Argumen pemutar gaya `am start`: `-a -d -t -c -n -p -f`, semua `--e*` (string/boolean/int/long/float/uri/array), `--activity-*`, `--grant-*` | RetroAchievements |
 | Template `{file.path}`, `{file.uri}`, `{file.mime}`, `{tags.*}` (+ `{file.name}`, `{file.basename}`, `{file.ext}`, `{file.dir}`) | Widget, koleksi, tema/wallpaper Daijishō |
 | Berkas `.dpt` (Player Template) untuk `{tags.*}` | Cadangan/pemulihan pustaka |
@@ -116,7 +116,7 @@ Belum:
   (`MaterialExpressiveTheme`, `MotionScheme.expressive()`, `MaterialShapes` + `toShape()`, `LoadingIndicator`); bila nama atau
   tanda tangannya berbeda di versi yang terpasang, kompilasi gagal di berkas `ui/` dan perbaikannya kecil.
 - Perilaku emulator tertentu terhadap URI `content://`, serta gestur di ROM Anda.
-- Cakupan nama permainan Libretro di luar contoh lokal.
+- Cakupan nama permainan ScreenScraper di luar contoh lokal.
 
 ## Langkah berikutnya yang masuk akal
 

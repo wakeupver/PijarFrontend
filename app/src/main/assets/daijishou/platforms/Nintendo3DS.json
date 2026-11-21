@@ -8,8 +8,6 @@
     "description": null,
     "acceptedFilenameRegex": "^(?!(?:\\._|\\.).*).*$",
     "scraperSourceList": [
-      "LIBRETRO:Nintendo - Nintendo 3DS",
-      "LIBRETRO:Nintendo - Nintendo 3DS (Digital)"
     ],
     "boxArtAspectRatioId": 0,
     "useCustomBoxArtAspectRatio": true,

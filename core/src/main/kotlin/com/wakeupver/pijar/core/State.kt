@@ -38,7 +38,7 @@ data class UiPrefs(
     val dynamicColor: Boolean = true,
     /** Hue aksen (0..359) saat warna dinamis mati. */
     val accentHue: Int = 265,
-    val scrape: ScrapeSettings = ScrapeSettings,
+    val scrape: ScrapeSettings = ScrapeSettings(),
 )
 
 data class AppState(
@@ -57,7 +57,13 @@ object StateCodec {
             "prefs" to linkedMapOf<String, Any?>(
                 "dynamicColor" to state.prefs.dynamicColor,
                 "accentHue" to state.prefs.accentHue,
-                "scrape" to linkedMapOf<String, Any?>(),
+                "scrape" to linkedMapOf<String, Any?>(
+                    "devId" to state.prefs.scrape.devId,
+                    "devPassword" to state.prefs.scrape.devPassword,
+                    "softName" to state.prefs.scrape.softName,
+                    "userId" to state.prefs.scrape.userId,
+                    "userPassword" to state.prefs.scrape.userPassword,
+                ),
             ),
             "platforms" to state.platforms.map {
                 linkedMapOf<String, Any?>(
@@ -96,7 +102,13 @@ object StateCodec {
             UiPrefs(
                 dynamicColor = p.bool("dynamicColor", true),
                 accentHue = p.int("accentHue", 265).coerceIn(0, 359),
-                scrape = ScrapeSettings,
+                scrape = ScrapeSettings(
+                    devId = p.string("devId"),
+                    devPassword = p.string("devPassword"),
+                    softName = p.string("softName", "Pijar"),
+                    userId = p.string("userId"),
+                    userPassword = p.string("userPassword"),
+                ),
             )
         }
         val platforms = root.objects("platforms").mapNotNull { o ->

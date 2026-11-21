@@ -8,7 +8,6 @@
     "description": null,
     "acceptedFilenameRegex": "^(?!(?:\\._|\\.).*).*$",
     "scraperSourceList": [
-      "LIBRETRO:NEC - PC-98"
     ],
     "boxArtAspectRatioId": 2,
     "useCustomBoxArtAspectRatio": false,

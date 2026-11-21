@@ -8,7 +8,6 @@
     "description": null,
     "acceptedFilenameRegex": "^(?!(?:\\._|\\.).*).*$",
     "scraperSourceList": [
-      "LIBRETRO:Uzebox"
     ],
     "boxArtAspectRatioId": 0,
     "useCustomBoxArtAspectRatio": false,

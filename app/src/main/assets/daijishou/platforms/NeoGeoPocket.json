@@ -8,7 +8,6 @@
     "description": null,
     "acceptedFilenameRegex": "^(?!(?:\\._|\\.).*).*$",
     "scraperSourceList": [
-      "LIBRETRO:SNK - Neo Geo Pocket"
     ],
     "boxArtAspectRatioId": 0,
     "useCustomBoxArtAspectRatio": false,

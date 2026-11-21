@@ -8,7 +8,6 @@
     "description": null,
     "acceptedFilenameRegex": "^(?!(?:\\._|\\.).*).*$",
     "scraperSourceList": [
-      "LIBRETRO:Magnavox - Odyssey2"
     ],
     "boxArtAspectRatioId": 2,
     "useCustomBoxArtAspectRatio": false,

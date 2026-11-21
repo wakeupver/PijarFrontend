@@ -22,7 +22,7 @@ data class PlatformDef(
     val acceptedFilenameRegex: String,
     val revision: Int,
     val players: List<PlayerDef>,
-    val libretroName: String = "",
+    val scraperName: String = "",
 )
 
 /** Satu entri di `platforms/index.json`. */

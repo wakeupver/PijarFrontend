@@ -8,7 +8,6 @@
     "description": null,
     "acceptedFilenameRegex": "^(?!(?:\\._|\\.).*).*$",
     "scraperSourceList": [
-      "LIBRETRO:Flashback"
     ],
     "boxArtAspectRatioId": 2,
     "useCustomBoxArtAspectRatio": false,

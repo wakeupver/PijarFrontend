@@ -8,7 +8,6 @@
     "description": null,
     "acceptedFilenameRegex": "^(?!(?:\\._|\\.).*).*$",
     "scraperSourceList": [
-      "LIBRETRO:WASM-4"
     ],
     "boxArtAspectRatioId": 0,
     "useCustomBoxArtAspectRatio": false,

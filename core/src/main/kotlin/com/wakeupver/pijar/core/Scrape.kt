@@ -3,10 +3,10 @@ package com.wakeupver.pijar.core
 import java.text.Normalizer
 
 enum class ScrapeSource {
-    LIBRETRO;
+    SCREENSCRAPER;
 
     val storageName: String
-        get() = "libretro"
+        get() = "screenscraper"
 
     companion object {
         fun from(raw: String): ScrapeSource? = entries.firstOrNull {
@@ -15,7 +15,16 @@ enum class ScrapeSource {
     }
 }
 
-object ScrapeSettings
+data class ScrapeSettings(
+    val devId: String = "",
+    val devPassword: String = "",
+    val softName: String = "Pijar",
+    val userId: String = "",
+    val userPassword: String = "",
+) {
+    val configured: Boolean
+        get() = userId.isNotBlank() && userPassword.isNotBlank()
+}
 
 data class GameMetadata(
     val source: ScrapeSource? = null,

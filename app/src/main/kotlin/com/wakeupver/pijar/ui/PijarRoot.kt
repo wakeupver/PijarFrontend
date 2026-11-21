@@ -86,6 +86,7 @@ fun PijarRoot(vm: MainViewModel) {
     var coverTargetId by remember { mutableStateOf<String?>(null) }
     var setupPlatformFor by remember { mutableStateOf<String?>(null) }
     var showAddPlatform by remember { mutableStateOf(false) }
+    var showScraperSettings by remember { mutableStateOf(false) }
     var folderTarget by remember { mutableStateOf<String?>(null) }
     var storageGranted by remember { mutableStateOf(Storage.hasAllFilesAccess(context)) }
     var isDefaultHome by remember { mutableStateOf(SystemUi.isDefaultHome(context)) }
@@ -110,6 +111,7 @@ fun PijarRoot(vm: MainViewModel) {
             renameGameId = null
             setupPlatformFor = null
             showAddPlatform = false
+            showScraperSettings = false
         }
     }
     // Gestur/tombol kembali (termasuk predictive back) dari tab lain menuju Beranda.
@@ -247,6 +249,7 @@ fun PijarRoot(vm: MainViewModel) {
                         },
                         onDynamicColor = { enabled -> vm.setDynamicColor(enabled) },
                         onAccent = { hue -> vm.setAccentHue(hue) },
+                        onConfigureScraper = { showScraperSettings = true },
                         isScraping = scraping.isNotEmpty(),
                         onScrapeAll = { vm.scrapeAll() },
                         onRequestHome = {
@@ -316,6 +319,17 @@ fun PijarRoot(vm: MainViewModel) {
                 onConfirm = { title ->
                     vm.renameGame(renameGame.id, title)
                     renameGameId = null
+                },
+            )
+        }
+
+        if (showScraperSettings) {
+            ScreenScraperDialog(
+                initial = state.prefs.scrape,
+                onDismiss = { showScraperSettings = false },
+                onConfirm = { settings ->
+                    vm.setScrapeSettings(settings)
+                    showScraperSettings = false
                 },
             )
         }

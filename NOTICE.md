@@ -14,7 +14,7 @@ Berkas `.dpt` dan format argumen pemutar mengikuti dokumentasi di repositori yan
 
 ## Sumber metadata & sampul
 
-Pijar dapat mengambil metadata dan sampul dari Libretro (https://libretro.com, https://thumbnails.libretro.com).
+Pijar dapat mengambil metadata dan sampul dari ScreenScraper (https://www.screenscraper.fr).
 Pijar tidak menyertakan data atau gambar dari layanan tersebut di dalam APK; permintaan dilakukan saat pengguna
 memilih scraper.
 

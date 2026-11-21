@@ -8,7 +8,6 @@
     "description": null,
     "acceptedFilenameRegex": "^(?!(?:\\._|\\.).*).*$",
     "scraperSourceList": [
-      "LIBRETRO:ScummVM"
     ],
     "boxArtAspectRatioId": 0,
     "useCustomBoxArtAspectRatio": true,

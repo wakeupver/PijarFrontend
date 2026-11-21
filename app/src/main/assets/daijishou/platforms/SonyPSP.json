@@ -8,7 +8,6 @@
     "description": null,
     "acceptedFilenameRegex": "^(?!(?:\\._|\\.).*).*$",
     "scraperSourceList": [
-      "LIBRETRO:Sony - PlayStation Portable"
     ],
     "boxArtAspectRatioId": 5,
     "useCustomBoxArtAspectRatio": true,

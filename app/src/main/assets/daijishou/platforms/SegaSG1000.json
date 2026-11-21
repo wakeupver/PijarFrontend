@@ -8,7 +8,6 @@
     "description": null,
     "acceptedFilenameRegex": "^(?!(?:\\._|\\.).*).*$",
     "scraperSourceList": [
-      "LIBRETRO:Sega - SG-1000"
     ],
     "boxArtAspectRatioId": 2,
     "useCustomBoxArtAspectRatio": false,

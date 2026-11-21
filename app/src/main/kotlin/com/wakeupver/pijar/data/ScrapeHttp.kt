@@ -4,61 +4,19 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
-import java.util.Locale
 
 object ScrapeHttp {
     private const val CONNECT_TIMEOUT = 10_000
     private const val READ_TIMEOUT = 20_000
     private const val TOTAL_TIMEOUT = 45_000
     private const val MAX_BYTES = 16 * 1024 * 1024
-    private const val THUMBNAILS = "https://thumbnails.libretro.com"
-    private const val RAW_THUMBNAILS = "https://raw.githubusercontent.com/libretro-thumbnails"
-    private const val CDN_THUMBNAILS = "https://cdn.jsdelivr.net/gh/libretro-thumbnails"
-    private const val DATABASE = "https://raw.githubusercontent.com/libretro/libretro-database/master/metadat"
-    private const val CDN_DATABASE = "https://cdn.jsdelivr.net/gh/libretro/libretro-database@master/metadat"
-    private val ALIASES = mapOf(
-        "atari - 8-bit" to "Atari - 8-bit Family",
-        "nec - pc-8001 - pc-8801" to "NEC - PC-88",
-        "microsoft - xbox" to "Microsoft - Xbox",
-    )
 
     data class Download(val bytes: ByteArray, val url: String)
 
     fun encode(value: String): String = URLEncoder.encode(value, "UTF-8").replace("+", "%20")
 
-    fun libretroNames(system: String): List<String> {
-        val repo = libretroRepo(system)
-        return listOf(system, repo).filter { it.isNotBlank() }.distinct()
-    }
-
-    fun libretroRepo(system: String): String =
-        ALIASES[system.lowercase(Locale.ROOT)] ?: system
-
-    fun libretroImageUrls(system: String, name: String): List<String> {
-        val repo = libretroRepo(system).trim().replace(' ', '_')
-        val tail = "Named_Boxarts/${encode(name)}"
-        return listOf(
-            "$RAW_THUMBNAILS/$repo/HEAD/$tail",
-            "$CDN_THUMBNAILS/$repo@HEAD/$tail",
-            "$THUMBNAILS/${encode(system)}/$tail",
-        )
-    }
-
-    fun libretroTreeApi(system: String): String {
-        val repo = libretroRepo(system).trim().replace(' ', '_')
-        return "https://api.github.com/repos/libretro-thumbnails/$repo/git/trees/HEAD?recursive=1"
-    }
-
-    fun libretroContentsApi(system: String): String {
-        val repo = libretroRepo(system).trim().replace(' ', '_')
-        return "https://api.github.com/repos/libretro-thumbnails/$repo/contents/Named_Boxarts"
-    }
-
-    fun hashDatUrls(source: String, system: String): List<String> =
-        libretroNames(system).flatMap { name ->
-            val path = "$source/${encode(name)}.dat"
-            listOf("$DATABASE/$path", "$CDN_DATABASE/$path")
-        }
+    fun query(params: Map<String, String>): String =
+        params.entries.joinToString("&") { "${encode(it.key)}=${encode(it.value)}" }
 
     fun getFirst(urls: List<String>, headers: Map<String, String> = emptyMap()): String? {
         for (url in urls) {
@@ -74,7 +32,7 @@ object ScrapeHttp {
     fun downloadFirst(urls: List<String>): Download? {
         for (url in urls) {
             val data = bytes(url, "GET", emptyMap(), null)
-            if (!data.isNullOrEmpty()) return Download(data, url)
+            if (data != null && data.isNotEmpty()) return Download(data, url)
         }
         return null
     }

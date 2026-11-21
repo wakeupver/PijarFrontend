@@ -21,8 +21,8 @@ class ScrapeTest {
     }
 
     @Test
-    fun platformReadsLibretroScraperName() {
-        val text = """{"platform":{"shortname":"a5200","uniqueId":"a5200","name":"Atari 5200","scraperSourceList":["LIBRETRO:Atari - 5200","DSESS:BOX_ART:x"]},"playerList":[]}"""
-        assertEquals("Atari - 5200", DaijishouFormat.parsePlatform(text).libretroName)
+    fun platformReadsScreenScraperName() {
+        val text = """{"platform":{"shortname":"a5200","uniqueId":"a5200","name":"Atari 5200","scraperSourceList":["SCREENSCRAPER:Atari - 5200","DSESS:BOX_ART:x"]},"playerList":[]}"""
+        assertEquals("Atari - 5200", DaijishouFormat.parsePlatform(text).scraperName)
     }
 }

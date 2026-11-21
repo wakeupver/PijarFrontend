@@ -62,7 +62,7 @@
     <string name="game_metadata_release">Released %1$s</string>
     <string name="game_metadata_genres">Genres: %1$s</string>
     <string name="game_metadata_source">Source: %1$s</string>
-    <string name="source_libretro">Libretro</string>
+    <string name="source_screenscraper">ScreenScraper</string>
     <string name="apps_title">Apps</string>
     <string name="apps_search_hint">Search apps</string>
     <string name="apps_empty">No apps found.</string>
@@ -70,7 +70,10 @@
     <string name="settings_section_platforms">My platforms</string>
     <string name="settings_section_appearance">Appearance</string>
     <string name="settings_section_scraper">Scraper</string>
-    <string name="settings_scraper_desc">Fetch metadata and covers from Libretro.</string>
+    <string name="settings_scraper_desc">Fetch metadata and covers from ScreenScraper.fr.</string>
+    <string name="settings_scraper_account">ScreenScraper account</string>
+    <string name="settings_scraper_account_on">Credentials saved</string>
+    <string name="settings_scraper_account_off">Credentials not set</string>
     <string name="settings_scrape_all">Scrape all games</string>
     <string name="settings_section_system">System</string>
     <string name="settings_section_about">About</string>
@@ -116,6 +119,11 @@
     <string name="file_handling_legacy_desc">Send the raw path and file:// URI</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_done">Done</string>
+    <string name="action_save">Save</string>
+    <string name="scraper_dialog_title">ScreenScraper credentials</string>
+    <string name="scraper_dialog_desc">Sign in with your free ScreenScraper account.</string>
+    <string name="scraper_user_id">ScreenScraper username</string>
+    <string name="scraper_user_password">ScreenScraper password</string>
     <string name="msg_scan_done">%1$d games found</string>
     <string name="msg_need_folder">Choose a ROM folder first</string>
     <string name="msg_folder_unsupported">That folder can\'t be used directly. Pick one on internal storage or an SD card.</string>

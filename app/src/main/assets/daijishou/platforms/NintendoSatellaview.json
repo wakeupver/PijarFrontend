@@ -8,7 +8,6 @@
     "description": null,
     "acceptedFilenameRegex": "^(?!(?:\\._|\\.).*).*(?<!bml)$",
     "scraperSourceList": [
-      "LIBRETRO:Nintendo - Satellaview"
     ],
     "boxArtAspectRatioId": 4,
     "useCustomBoxArtAspectRatio": false,
