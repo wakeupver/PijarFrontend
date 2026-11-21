@@ -62,7 +62,7 @@
     <string name="game_metadata_release">Rilis %1$s</string>
     <string name="game_metadata_genres">Genre: %1$s</string>
     <string name="game_metadata_source">Sumber: %1$s</string>
-    <string name="source_screenscraper">ScreenScraper</string>
+    <string name="source_libretro">Libretro</string>
     <string name="apps_title">Aplikasi</string>
     <string name="apps_search_hint">Cari aplikasi</string>
     <string name="apps_empty">Aplikasi tidak ditemukan.</string>
@@ -70,10 +70,7 @@
     <string name="settings_section_platforms">Platform saya</string>
     <string name="settings_section_appearance">Tampilan</string>
     <string name="settings_section_scraper">Pengambil data</string>
-    <string name="settings_scraper_desc">Ambil metadata dan sampul dari ScreenScraper.fr.</string>
-    <string name="settings_scraper_account">Akun ScreenScraper</string>
-    <string name="settings_scraper_account_on">Kredensial tersimpan</string>
-    <string name="settings_scraper_account_off">Kredensial belum diisi</string>
+    <string name="settings_scraper_desc">Ambil metadata dan sampul dari Libretro.</string>
     <string name="settings_scrape_all">Ambil data semua game</string>
     <string name="settings_section_system">Sistem</string>
     <string name="settings_section_about">Tentang</string>
@@ -119,11 +116,6 @@
     <string name="file_handling_legacy_desc">Kirim path mentah dan URI file://</string>
     <string name="action_cancel">Batal</string>
     <string name="action_done">Selesai</string>
-    <string name="action_save">Simpan</string>
-    <string name="scraper_dialog_title">Kredensial ScreenScraper</string>
-    <string name="scraper_dialog_desc">Masuk dengan akun ScreenScraper gratis Anda.</string>
-    <string name="scraper_user_id">Nama pengguna ScreenScraper</string>
-    <string name="scraper_user_password">Kata sandi ScreenScraper</string>
     <string name="msg_scan_done">%1$d game ditemukan</string>
     <string name="msg_need_folder">Pilih folder ROM dulu</string>
     <string name="msg_folder_unsupported">Folder itu tidak bisa dipakai langsung. Pilih folder di penyimpanan internal atau kartu SD.</string>

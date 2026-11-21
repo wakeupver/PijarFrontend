@@ -8,6 +8,7 @@
     "description": null,
     "acceptedFilenameRegex": "^(?!(?:\\._|\\.).*).*$",
     "scraperSourceList": [
+      "LIBRETRO:LowRes NX"
     ],
     "boxArtAspectRatioId": 1,
     "useCustomBoxArtAspectRatio": false,

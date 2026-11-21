@@ -8,6 +8,7 @@
     "description": null,
     "acceptedFilenameRegex": "^(?!(?:\\._|\\.).*).*$",
     "scraperSourceList": [
+      "LIBRETRO:Adruboy Inc - Arduboy"
 	],
     "boxArtAspectRatioId": 0,
     "useCustomBoxArtAspectRatio": false,

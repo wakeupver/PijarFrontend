@@ -8,6 +8,7 @@
     "description": null,
     "acceptedFilenameRegex": "^(?!(?:\\._|\\.).*).*$",
     "scraperSourceList": [
+      "LIBRETRO:TIC-80"
     ],
     "boxArtAspectRatioId": 0,
     "useCustomBoxArtAspectRatio": true,

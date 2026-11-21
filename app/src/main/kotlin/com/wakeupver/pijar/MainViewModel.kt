@@ -11,7 +11,6 @@ import com.wakeupver.pijar.core.FileHandling
 import com.wakeupver.pijar.core.GameRecord
 import com.wakeupver.pijar.core.PlatformCatalog
 import com.wakeupver.pijar.core.PlayerPicker
-import com.wakeupver.pijar.core.ScrapeSettings
 import com.wakeupver.pijar.core.UiPrefs
 import com.wakeupver.pijar.data.AppEntry
 import com.wakeupver.pijar.data.Apps
@@ -173,8 +172,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setDynamicColor(enabled: Boolean) = repo.setPrefs { it.copy(dynamicColor = enabled) }
 
     fun setAccentHue(hue: Int) = repo.setPrefs { it.copy(accentHue = hue) }
-
-    fun setScrapeSettings(settings: ScrapeSettings) = repo.setPrefs { it.copy(scrape = settings) }
 
     fun notifyFolderUnsupported() = say(R.string.msg_folder_unsupported)
 

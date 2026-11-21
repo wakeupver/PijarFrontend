@@ -8,6 +8,7 @@
     "description": null,
     "acceptedFilenameRegex": "^(?!(?:\\._|\\.).*).*(?<!bin)$",
     "scraperSourceList": [
+      "LIBRETRO:Sega - Mega-CD - Sega CD"
     ],
     "boxArtAspectRatioId": 2,
     "useCustomBoxArtAspectRatio": false,

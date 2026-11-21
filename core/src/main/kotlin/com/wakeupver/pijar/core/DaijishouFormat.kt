@@ -12,14 +12,10 @@ object DaijishouFormat {
         val uniqueId = platform.string("uniqueId").ifBlank { shortName }
         if (uniqueId.isBlank()) throw JsonException("Platform tanpa uniqueId/shortname")
         val name = platform.string("name").ifBlank { uniqueId }
-        val scraperName = (platform["scraperSourceList"] as? List<*>)
+        val libretroName = (platform["scraperSourceList"] as? List<*>)
             .orEmpty()
             .mapNotNull { it as? String }
-            .firstOrNull {
-                it.startsWith("SCREENSCRAPER:", ignoreCase = true) ||
-                    it.startsWith("SCREENSCAPPER:", ignoreCase = true) ||
-                    it.startsWith("SS:", ignoreCase = true)
-            }
+            .firstOrNull { it.startsWith("LIBRETRO:", ignoreCase = true) }
             ?.substringAfter(':')
             ?.trim()
             .orEmpty()
@@ -43,7 +39,7 @@ object DaijishouFormat {
             acceptedFilenameRegex = platform.string("acceptedFilenameRegex", ".*"),
             revision = root.int("revisionNumber"),
             players = players,
-            scraperName = scraperName,
+            libretroName = libretroName,
         )
     }
 

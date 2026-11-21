@@ -8,8 +8,11 @@
     "description": null,
     "acceptedFilenameRegex": "^(?!(?:\\._|\\.).*).*(?<!bin)$",
     "scraperSourceList": [
+      "LIBRETRO:Atomiswave",
+      "LIBRETRO:MAME",
       "ARCADE_ITALIA:MAME",
-      "DSESS:GENRES:TAGS(scraperKeyword):http://adb.arcadeitalia.net/dettaglio_mame.php?game_name=%7BscraperKeyword%7D&arcade_only=0&autosearch=1&dsess_selector=div.colonna_sinistra%3Anth-child%281%29+div.table_row%3Anth-child%286%29+span.dettaglio"
+      "DSESS:GENRES:TAGS(scraperKeyword):http://adb.arcadeitalia.net/dettaglio_mame.php?game_name=%7BscraperKeyword%7D&arcade_only=0&autosearch=1&dsess_selector=div.colonna_sinistra%3Anth-child%281%29+div.table_row%3Anth-child%286%29+span.dettaglio",
+      "LIBRETRO:Sega - Dreamcast"
     ],
     "boxArtAspectRatioId": 1,
     "useCustomBoxArtAspectRatio": false,

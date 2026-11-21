@@ -67,7 +67,6 @@ fun SettingsScreen(
     onImport: () -> Unit,
     onDynamicColor: (Boolean) -> Unit,
     onAccent: (Int) -> Unit,
-    onConfigureScraper: () -> Unit,
     isScraping: Boolean,
     onScrapeAll: () -> Unit,
     onRequestHome: () -> Unit,
@@ -211,25 +210,6 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
-                )
-            }
-            item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.settings_scraper_account)) },
-                    supportingContent = {
-                        Text(
-                            stringResource(
-                                if (state.prefs.scrape.configured) {
-                                    R.string.settings_scraper_account_on
-                                } else {
-                                    R.string.settings_scraper_account_off
-                                },
-                            ),
-                        )
-                    },
-                    leadingContent = { Icon(Icons.Rounded.KeyboardArrowRight, contentDescription = null) },
-                    colors = transparent,
-                    modifier = Modifier.clickable(onClick = onConfigureScraper),
                 )
             }
             item {

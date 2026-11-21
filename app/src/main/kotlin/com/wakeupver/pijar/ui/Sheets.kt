@@ -19,8 +19,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Favorite
@@ -69,7 +67,6 @@ import com.wakeupver.pijar.core.PlatformConfig
 import com.wakeupver.pijar.core.PlatformDef
 import com.wakeupver.pijar.core.PlayerDef
 import com.wakeupver.pijar.core.PlayerPicker
-import com.wakeupver.pijar.core.ScrapeSettings
 import com.wakeupver.pijar.core.ScrapeSource
 import com.wakeupver.pijar.data.Apps
 import kotlinx.coroutines.Dispatchers
@@ -136,8 +133,8 @@ fun GameSheet(
     val genresLabel = game.metadata.genres.takeIf { it.isNotEmpty() }
         ?.let { stringResource(R.string.game_metadata_genres, it.joinToString(", ")) }
         .orEmpty()
-    val sourceLabel = if (game.metadata.source == ScrapeSource.SCREENSCRAPER) {
-        stringResource(R.string.source_screenscraper)
+    val sourceLabel = if (game.metadata.source == ScrapeSource.LIBRETRO) {
+        stringResource(R.string.source_libretro)
     } else {
         ""
     }
@@ -770,66 +767,6 @@ fun RenameGameDialog(
         confirmButton = {
             TextButton(onClick = { if (value.isNotBlank()) onConfirm(value.trim()) }) {
                 Text(stringResource(R.string.action_done))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.action_cancel))
-            }
-        },
-    )
-}
-
-@Composable
-fun ScreenScraperDialog(
-    initial: ScrapeSettings,
-    onDismiss: () -> Unit,
-    onConfirm: (ScrapeSettings) -> Unit,
-) {
-    var userId by remember(initial) { mutableStateOf(initial.userId) }
-    var userPassword by remember(initial) { mutableStateOf(initial.userPassword) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.scraper_dialog_title)) },
-        text = {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text(
-                    text = stringResource(R.string.scraper_dialog_desc),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                OutlinedTextField(
-                    value = userId,
-                    onValueChange = { userId = it },
-                    label = { Text(stringResource(R.string.scraper_user_id)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = userPassword,
-                    onValueChange = { userPassword = it },
-                    label = { Text(stringResource(R.string.scraper_user_password)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                onConfirm(
-                    ScrapeSettings(
-                        devId = initial.devId,
-                        devPassword = initial.devPassword,
-                        softName = initial.softName,
-                        userId = userId.trim(),
-                        userPassword = userPassword,
-                    ),
-                )
-            }) {
-                Text(stringResource(R.string.action_save))
             }
         },
         dismissButton = {

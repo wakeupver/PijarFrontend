@@ -8,6 +8,7 @@
     "description": null,
     "acceptedFilenameRegex": "^(?!(?:\\._|\\.).*).*$",
     "scraperSourceList": [
+      "LIBRETRO:RPG Maker"
     ],
     "boxArtAspectRatioId": 1,
     "useCustomBoxArtAspectRatio": false,

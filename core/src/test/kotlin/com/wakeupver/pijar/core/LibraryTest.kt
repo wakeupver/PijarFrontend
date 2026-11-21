@@ -46,7 +46,7 @@ class LibraryTest {
                 lastPlayedAt = 99,
                 playCount = 3,
                 favorite = true,
-                metadata = GameMetadata(source = ScrapeSource.SCREENSCRAPER, coverUrl = "https://example.test/a.png"),
+                metadata = GameMetadata(source = ScrapeSource.LIBRETRO, coverUrl = "https://example.test/a.png"),
             ),
             GameRecord("old", "psx", "/r/gone.iso", "Gone", addedAt = 1),
             GameRecord("zzz", "nes", "/r/n.nes", "NES", addedAt = 1),

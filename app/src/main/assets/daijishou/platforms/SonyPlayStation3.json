@@ -8,6 +8,8 @@
     "description": null,
     "acceptedFilenameRegex": "^(?!(?:\\._|\\.).*).*$",
     "scraperSourceList": [
+      "LIBRETRO:Sony - PlayStation 3",
+      "LIBRETRO:Sony - PlayStation 3 (PSN)"
     ],
     "boxArtAspectRatioId": 2,
     "useCustomBoxArtAspectRatio": true,
