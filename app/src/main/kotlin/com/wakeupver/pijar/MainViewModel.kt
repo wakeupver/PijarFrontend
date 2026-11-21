@@ -18,9 +18,8 @@ import com.wakeupver.pijar.data.CoverCache
 import com.wakeupver.pijar.data.Repository
 import com.wakeupver.pijar.data.Storage
 import com.wakeupver.pijar.data.SystemUi
-import com.wakeupver.pijar.gamepad.GamepadStore
-import com.wakeupver.pijar.gamepad.PijarAccessibilityService
-import com.wakeupver.pijar.gamepad.VirtualGamepad
+import com.wakeupver.pijar.gamepad.GamepadService
+import com.wakeupver.pijar.gamepad.RootAccess
 import com.wakeupver.pijar.launch.GameLauncher
 import com.wakeupver.pijar.launch.LaunchException
 import kotlinx.coroutines.Dispatchers
@@ -179,12 +178,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setVirtualGamepad(enabled: Boolean) {
         repo.setPrefs { it.copy(virtualGamepad = enabled) }
-        if (!enabled) VirtualGamepad.hide()
-    }
-
-    fun recalibrateGamepad() {
-        GamepadStore.clearAll(getApplication())
-        say(R.string.msg_gamepad_recalibrated)
+        if (!enabled) GamepadService.stop(getApplication())
     }
 
     fun notifyFolderUnsupported() = say(R.string.msg_folder_unsupported)
@@ -226,9 +220,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             repo.markPlayed(game.id)
             if (gamepadEnabled) {
                 val app = getApplication<Application>()
-                val enabled = SystemUi.isAccessibilityServiceEnabled(app, PijarAccessibilityService::class.java)
-                if (!enabled || !VirtualGamepad.show(game.platformId, player.packageName)) {
-                    say(R.string.msg_gamepad_accessibility)
+                viewModelScope.launch {
+                    val overlayReady = SystemUi.canDrawOverlays(app)
+                    val rootReady = withContext(Dispatchers.IO) { RootAccess.available() }
+                    when {
+                        !overlayReady -> say(R.string.msg_gamepad_overlay_permission)
+                        !rootReady -> say(R.string.msg_gamepad_root_missing)
+                        else -> GamepadService.start(app)
+                    }
                 }
             }
         } catch (e: LaunchException) {

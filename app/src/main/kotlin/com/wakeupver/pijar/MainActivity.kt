@@ -8,7 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.wakeupver.pijar.gamepad.VirtualGamepad
+import com.wakeupver.pijar.gamepad.GamepadService
 import com.wakeupver.pijar.ui.PijarRoot
 import com.wakeupver.pijar.ui.theme.PijarTheme
 
@@ -33,7 +33,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        VirtualGamepad.hide()
+        GamepadService.stop(this)
     }
 
     override fun onNewIntent(intent: Intent) {

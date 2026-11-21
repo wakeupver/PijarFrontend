@@ -2,10 +2,10 @@ package com.wakeupver.pijar.data
 
 import android.app.role.RoleManager
 import android.content.ActivityNotFoundException
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 
@@ -38,14 +38,8 @@ object SystemUi {
         return Intent(Settings.ACTION_HOME_SETTINGS)
     }
 
-    fun isAccessibilityServiceEnabled(context: Context, service: Class<*>): Boolean {
-        val expected = ComponentName(context, service)
-        val enabled = Settings.Secure.getString(
-            context.contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
-        ).orEmpty()
-        return enabled.split(':').any { ComponentName.unflattenFromString(it) == expected }
-    }
+    fun canDrawOverlays(context: Context): Boolean = Settings.canDrawOverlays(context)
 
-    fun accessibilitySettingsIntent(): Intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+    fun overlaySettingsIntent(context: Context): Intent =
+        Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
 }

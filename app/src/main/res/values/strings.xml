@@ -71,10 +71,8 @@
     <string name="settings_section_appearance">Appearance</string>
     <string name="settings_section_controller">Controller</string>
     <string name="settings_virtual_gamepad">Virtual gamepad</string>
-    <string name="settings_virtual_gamepad_desc">Show a touch controller when a game starts. The buttons tap the emulator\'s on-screen controls.</string>
-    <string name="settings_virtual_gamepad_needs_accessibility">Accessibility service is off. Tap to enable it.</string>
-    <string name="settings_virtual_gamepad_recalibrate">Recalibrate gamepad</string>
-    <string name="settings_virtual_gamepad_recalibrate_desc">Clear saved button positions for every game.</string>
+    <string name="settings_virtual_gamepad_desc">Show a virtual Xbox 360 gamepad when a game starts. Requires root and overlay permission.</string>
+    <string name="settings_virtual_gamepad_needs_setup">Overlay permission is off. Tap the switch to grant it.</string>
     <string name="settings_section_scraper">Scraper</string>
     <string name="settings_scraper_desc">Fetch metadata and covers from Libretro.</string>
     <string name="settings_scrape_all">Scrape all games</string>
@@ -138,11 +136,11 @@
     <string name="msg_scrape_none">No metadata or cover found</string>
     <string name="msg_cover_ok">Cover updated</string>
     <string name="msg_cover_failed">Couldn\'t use that image</string>
-    <string name="accessibility_service_label">Pijar virtual gamepad</string>
-    <string name="accessibility_service_description">Shows the virtual gamepad and taps the emulator\'s on-screen controls.</string>
-    <string name="gamepad_calibrate_step">Tap the emulator\'s %1$s control (%2$d/%3$d).</string>
-    <string name="gamepad_calibrate_blocked">Tap below the gamepad bar so the button does not cover the emulator control.</string>
-    <string name="gamepad_calibrate_skip">Skip</string>
+    <string name="gamepad_left_stick">Left stick</string>
+    <string name="gamepad_right_stick">Right stick</string>
+    <string name="gamepad_notification_channel">Virtual gamepad</string>
+    <string name="gamepad_notification_title">Virtual gamepad active</string>
+    <string name="gamepad_notification_text">Xbox 360 controller input is running.</string>
     <string name="gamepad_dpad_up">D-pad up</string>
     <string name="gamepad_dpad_down">D-pad down</string>
     <string name="gamepad_dpad_left">D-pad left</string>
@@ -159,6 +157,8 @@
     <string name="gamepad_r3">R3</string>
     <string name="gamepad_select">Select</string>
     <string name="gamepad_start">Start</string>
-    <string name="msg_gamepad_accessibility">Enable Pijar\'s accessibility service to use the virtual gamepad.</string>
-    <string name="msg_gamepad_recalibrated">Gamepad calibration cleared.</string>
+    <string name="msg_gamepad_overlay_permission">Grant overlay permission to use the virtual gamepad.</string>
+    <string name="msg_gamepad_root_missing">Root access is required to create the virtual gamepad.</string>
+    <string name="msg_gamepad_root_failed">Could not start the virtual gamepad. Check root and the uinput tool.</string>
+    <string name="msg_gamepad_overlay_failed">Could not draw the gamepad controls. Check overlay permission.</string>
 </resources>

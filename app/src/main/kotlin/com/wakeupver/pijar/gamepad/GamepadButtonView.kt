@@ -11,7 +11,7 @@ import android.view.View
 class GamepadButtonView(
     context: Context,
     private val control: GamepadControl,
-    private val onTap: (GamepadControl) -> Unit,
+    private val backend: GamepadBackend,
 ) : View(context) {
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
     private val border = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -22,8 +22,7 @@ class GamepadButtonView(
         textAlign = Paint.Align.CENTER
         typeface = Typeface.DEFAULT_BOLD
     }
-    private val density = resources.displayMetrics.density
-    private var touchCount = 0
+    private var activePointer = -1
 
     init {
         isClickable = true
@@ -34,68 +33,58 @@ class GamepadButtonView(
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                touchCount = 1
-                setPressedState(true)
-                return true
-            }
-            MotionEvent.ACTION_POINTER_DOWN -> {
-                touchCount++
+                activePointer = event.getPointerId(0)
+                setPressed(true)
+                backend.setButton(control, true)
                 return true
             }
             MotionEvent.ACTION_POINTER_UP -> {
-                touchCount = (touchCount - 1).coerceAtLeast(0)
-                if (touchCount == 0) setPressedState(false)
+                if (event.getPointerId(event.actionIndex) == activePointer) release()
                 return true
             }
             MotionEvent.ACTION_UP -> {
-                touchCount = 0
-                setPressedState(false)
-                performClick()
+                if (event.getPointerId(event.actionIndex) == activePointer) release()
                 return true
             }
             MotionEvent.ACTION_CANCEL -> {
-                touchCount = 0
-                setPressedState(false)
+                release()
                 return true
             }
         }
         return super.onTouchEvent(event)
     }
 
-    private fun setPressedState(value: Boolean) {
+    private fun release() {
+        if (activePointer == -1) return
+        activePointer = -1
+        setPressed(false)
+        backend.setButton(control, false)
+    }
+
+    private fun setPressed(value: Boolean) {
         if (isPressed == value) return
         isPressed = value
         invalidate()
-    }
-
-    override fun performClick(): Boolean {
-        super.performClick()
-        onTap(control)
-        return true
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val cx = width / 2f
         val cy = height / 2f
-        val radius = minOf(width, height) / 2f - dp(1f)
+        val radius = minOf(width, height) / 2f - 1f
         fill.color = if (isPressed) Color.argb(235, 98, 0, 238) else Color.argb(155, 18, 18, 24)
         canvas.drawCircle(cx, cy, radius, fill)
         border.color = if (isPressed) Color.WHITE else Color.argb(185, 255, 255, 255)
-        border.strokeWidth = dp(1.5f)
+        border.strokeWidth = 2f
         canvas.drawCircle(cx, cy, radius, border)
         val text = control.face
         label.textSize = when {
-            text.length >= 5 -> size() * 0.2f
-            text.length >= 3 -> size() * 0.25f
-            text.length == 2 -> size() * 0.33f
-            else -> size() * 0.42f
+            text.length >= 5 -> width * 0.19f
+            text.length >= 3 -> width * 0.25f
+            text.length == 2 -> width * 0.34f
+            else -> width * 0.42f
         }
         val metrics = label.fontMetrics
         canvas.drawText(text, cx, cy - (metrics.ascent + metrics.descent) / 2f, label)
     }
-
-    private fun size(): Float = minOf(width, height).toFloat()
-
-    private fun dp(value: Float): Float = value * density
 }

@@ -71,10 +71,8 @@
     <string name="settings_section_appearance">Tampilan</string>
     <string name="settings_section_controller">Kontrol</string>
     <string name="settings_virtual_gamepad">Gamepad virtual</string>
-    <string name="settings_virtual_gamepad_desc">Tampilkan kontrol sentuh saat game dimulai. Tombol mengetuk kontrol emulator di layar.</string>
-    <string name="settings_virtual_gamepad_needs_accessibility">Layanan aksesibilitas mati. Ketuk untuk mengaktifkan.</string>
-    <string name="settings_virtual_gamepad_recalibrate">Kalibrasi ulang gamepad</string>
-    <string name="settings_virtual_gamepad_recalibrate_desc">Hapus posisi tombol yang tersimpan untuk semua game.</string>
+    <string name="settings_virtual_gamepad_desc">Tampilkan gamepad Xbox 360 virtual saat game dimulai. Membutuhkan root dan izin overlay.</string>
+    <string name="settings_virtual_gamepad_needs_setup">Izin overlay mati. Ketuk sakelar untuk memberikannya.</string>
     <string name="settings_section_scraper">Pengambil data</string>
     <string name="settings_scraper_desc">Ambil metadata dan sampul dari Libretro.</string>
     <string name="settings_scrape_all">Ambil data semua game</string>
@@ -138,11 +136,11 @@
     <string name="msg_scrape_none">Metadata atau sampul tidak ditemukan</string>
     <string name="msg_cover_ok">Sampul diperbarui</string>
     <string name="msg_cover_failed">Gambar itu tidak bisa dipakai</string>
-    <string name="accessibility_service_label">Gamepad virtual Pijar</string>
-    <string name="accessibility_service_description">Menampilkan gamepad virtual dan mengetuk kontrol emulator di layar.</string>
-    <string name="gamepad_calibrate_step">Ketuk kontrol %1$s di emulator (%2$d/%3$d).</string>
-    <string name="gamepad_calibrate_blocked">Ketuk di bawah bilah gamepad agar tombol tidak menutupi kontrol emulator.</string>
-    <string name="gamepad_calibrate_skip">Lewati</string>
+    <string name="gamepad_left_stick">Stick kiri</string>
+    <string name="gamepad_right_stick">Stick kanan</string>
+    <string name="gamepad_notification_channel">Gamepad virtual</string>
+    <string name="gamepad_notification_title">Gamepad virtual aktif</string>
+    <string name="gamepad_notification_text">Input kontrol Xbox 360 sedang berjalan.</string>
     <string name="gamepad_dpad_up">D-Pad atas</string>
     <string name="gamepad_dpad_down">D-Pad bawah</string>
     <string name="gamepad_dpad_left">D-Pad kiri</string>
@@ -159,6 +157,8 @@
     <string name="gamepad_r3">R3</string>
     <string name="gamepad_select">Pilih</string>
     <string name="gamepad_start">Mulai</string>
-    <string name="msg_gamepad_accessibility">Aktifkan layanan aksesibilitas Pijar untuk memakai gamepad virtual.</string>
-    <string name="msg_gamepad_recalibrated">Kalibrasi gamepad dihapus.</string>
+    <string name="msg_gamepad_overlay_permission">Berikan izin overlay untuk memakai gamepad virtual.</string>
+    <string name="msg_gamepad_root_missing">Akses root diperlukan untuk membuat gamepad virtual.</string>
+    <string name="msg_gamepad_root_failed">Gamepad virtual gagal dimulai. Periksa root dan perkakas uinput.</string>
+    <string name="msg_gamepad_overlay_failed">Kontrol gamepad gagal ditampilkan. Periksa izin overlay.</string>
 </resources>
