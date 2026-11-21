@@ -14,6 +14,7 @@ object LibretroThumbnails {
     private const val FAILURE_TTL = 10L * 60 * 1000
     private const val MAX_FUZZY_CANDIDATES = 400
     private const val MAX_TOKEN_POSTINGS = 4
+    private val STOPWORDS = setOf("the", "a", "an", "and", "of", "us", "usa", "jp", "japan", "eu", "europe", "world")
     private val EXTENSIONS = listOf("png", "jpg")
     private val LINK = Regex("""<a\s+href="([^"]+)"[^>]*>""", RegexOption.IGNORE_CASE)
     private val IMAGE = Regex("""\.(png|jpg|jpeg|webp)$""", RegexOption.IGNORE_CASE)
@@ -38,12 +39,18 @@ object LibretroThumbnails {
 
     private fun matchUncached(system: String, fileName: String, query: String, cacheDir: File): String? {
         if (system.isBlank()) return null
+        directMatch(system, fileName, query)?.let { return it }
+
         val index = index(system, cacheDir)
-        if (index.items.isEmpty()) return directMatch(system, fileName, query)
+        if (index.items.isEmpty()) return null
+        val sourceRegions = regions(fileName)
 
         for (exact in exactCandidates(fileName, query)) {
             val found = index.exact[exact.lowercase(Locale.ROOT)] ?: continue
-            return link(system, index.items[found].name)
+            val best = found.map { index.items[it] }
+                .maxByOrNull { tagBonus(sourceRegions, it.regions) - it.penalty }
+                ?: continue
+            return link(system, best.name)
         }
 
         val queries = candidates(fileName, query).map(::queryData)
@@ -57,7 +64,6 @@ object LibretroThumbnails {
         }
         if (candidateIndices.isEmpty()) return null
 
-        val sourceRegions = regions(fileName)
         var bestName: String? = null
         var bestScore = Int.MIN_VALUE
         for (candidateIndex in candidateIndices) {
@@ -73,10 +79,9 @@ object LibretroThumbnails {
             if (adjusted > bestScore) {
                 bestScore = adjusted
                 bestName = item.name
-                if (bestScore == 1000) break
             }
         }
-        return bestName?.let { link(system, it) } ?: directMatch(system, fileName, query)
+        return bestName?.let { link(system, it) }
     }
 
     private fun directMatch(system: String, fileName: String, query: String): String? {
@@ -168,14 +173,14 @@ object LibretroThumbnails {
     private fun build(names: List<String>): IndexedNames {
         val items = ArrayList<IndexedCover>(names.size)
         val byToken = HashMap<String, MutableList<Int>>()
-        val exact = HashMap<String, Int>()
+        val exact = HashMap<String, MutableList<Int>>()
         names.forEachIndexed { index, name ->
             val base = GameTitles.baseName(name)
             val display = GameTitles.clean(name).ifBlank { base }
             val item = IndexedCover(
                 name = name,
                 normalized = ScrapeMatcher.normalize(display),
-                tokens = ScrapeMatcher.tokens(display).toSet(),
+                tokens = tokens(ScrapeMatcher.normalize(display)).toSet(),
                 regions = regions(name),
                 penalty = qualityPenalty(name),
             )
@@ -186,13 +191,15 @@ object LibretroThumbnails {
             putExact(exact, ILLEGAL.replace(base, "_"), index)
             putExact(exact, ILLEGAL.replace(name, "_"), index)
             putExact(exact, name, index)
+            putExact(exact, ScrapeMatcher.normalize(display), index)
+            putExact(exact, ScrapeMatcher.normalize(name), index)
         }
         return IndexedNames(items, byToken, exact)
     }
 
-    private fun putExact(exact: HashMap<String, Int>, value: String, index: Int) {
+    private fun putExact(exact: HashMap<String, MutableList<Int>>, value: String, index: Int) {
         val key = value.lowercase(Locale.ROOT)
-        if (key.isNotBlank() && !exact.containsKey(key)) exact[key] = index
+        if (key.isNotBlank()) exact.getOrPut(key) { ArrayList() }.add(index)
     }
 
     private fun parse(html: String): List<String> {
@@ -233,53 +240,68 @@ object LibretroThumbnails {
     private fun candidates(fileName: String, query: String): List<String> {
         val result = linkedSetOf<String>()
         result += GameTitles.baseName(fileName).trim()
+        result += GameTitles.clean(fileName).trim()
         result += query.trim()
-        result += fileName.trim()
         return result.filter { it.isNotEmpty() }
     }
 
     private fun exactCandidates(fileName: String, query: String): List<String> =
         candidates(fileName, query)
-            .map { ILLEGAL.replace(it, "_") }
+            .flatMap { listOf(ILLEGAL.replace(it, "_"), ScrapeMatcher.normalize(it)) }
             .filter { it.isNotBlank() }
             .distinct()
 
-    private fun queryData(value: String): QueryData =
-        QueryData(ScrapeMatcher.normalize(value), ScrapeMatcher.tokens(value))
+    private fun tokens(value: String): List<String> =
+        value.split(' ').filter { it.isNotBlank() && it !in STOPWORDS }
+
+    private fun queryData(value: String): QueryData {
+        val normalized = ScrapeMatcher.normalize(value)
+        return QueryData(normalized, tokens(normalized))
+    }
 
     private fun score(query: QueryData, item: IndexedCover): Int {
         val q = query.normalized
         val c = item.normalized
         if (q.isEmpty() || c.isEmpty()) return 0
         if (q == c) return 1000
-        if (c.startsWith(q) || q.startsWith(c)) return 850
-        if (c.contains(q) || q.contains(c)) return 750
-        val hits = hits(query.tokens, item.tokens)
-        if (hits == 0) return 0
-        val coverage = hits * 100 / query.tokens.size
-        val penalty = kotlin.math.abs(query.tokens.size - item.tokens.size) * 8
-        return (250 + coverage - penalty).coerceAtLeast(1)
+        val qt = query.tokens
+        val ct = item.tokens.toList()
+        if (qt.isEmpty() || ct.isEmpty()) return 0
+        val matchedQuery = qt.count { token -> ct.any { similar(it, token) } }
+        val matchedCandidate = ct.count { token -> qt.any { similar(it, token) } }
+        val coverageQuery = matchedQuery * 100 / qt.size
+        val coverageCandidate = matchedCandidate * 100 / ct.size
+        val base = when {
+            coverageQuery >= 90 && coverageCandidate >= 90 -> 900
+            coverageQuery >= 70 && coverageCandidate >= 70 -> 700
+            coverageQuery >= 50 && coverageCandidate >= 50 -> 450
+            else -> 0
+        }
+        if (base == 0) return 0
+        val extraCandidate = ct.size - matchedCandidate
+        val extraQuery = qt.size - matchedQuery
+        return (base - extraCandidate * 25 - extraQuery * 10).coerceAtLeast(1)
     }
 
     private fun isStrong(query: QueryData, item: IndexedCover): Boolean {
-        if (query.tokens.isEmpty() || item.tokens.isEmpty()) return false
-        val hits = hits(query.tokens, item.tokens)
-        val coverage = hits * 100 / query.tokens.size
-        if (hits >= minOf(2, query.tokens.size) && coverage >= 50) return true
-        return hits >= 1 && score(query, item) >= 850
+        if (query.normalized == item.normalized) return true
+        val qt = query.tokens
+        val ct = item.tokens.toList()
+        if (qt.isEmpty() || ct.isEmpty()) return false
+        if (kotlin.math.abs(qt.size - ct.size) > 1) return false
+        val matchedQuery = qt.count { token -> ct.any { similar(it, token) } }
+        val matchedCandidate = ct.count { token -> qt.any { similar(it, token) } }
+        return matchedQuery * 100 / qt.size >= 80 && matchedCandidate * 100 / ct.size >= 80
     }
 
-    private fun hits(queryTokens: List<String>, candidateTokens: Set<String>): Int =
-        queryTokens.count { token ->
-            candidateTokens.any { it == token || it.startsWith(token) || token.startsWith(it) }
-        }
+    private fun similar(a: String, b: String): Boolean =
+        a == b || (a.length >= 3 && b.length >= 3 && (a.startsWith(b) || b.startsWith(a)))
 
     private fun tagBonus(source: Set<String>, candidate: Set<String>): Int {
-        if (source.isEmpty()) return 0
+        if (source.isEmpty() || candidate.isEmpty()) return 0
         val overlap = source.intersect(candidate).size
-        if (overlap > 0) return 80 * overlap
-        if ("world" in source) return 10
-        return -20
+        if (overlap > 0) return 10 * overlap
+        return if ("world" in source) 5 else -10
     }
 
     private fun regions(value: String): Set<String> {
@@ -360,7 +382,7 @@ object LibretroThumbnails {
     private data class IndexedNames(
         val items: List<IndexedCover>,
         val byToken: Map<String, List<Int>>,
-        val exact: Map<String, Int>,
+        val exact: Map<String, List<Int>>,
     )
 
     private data class CachedIndex(val at: Long, val index: IndexedNames)
