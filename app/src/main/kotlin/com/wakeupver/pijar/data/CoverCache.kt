@@ -12,7 +12,7 @@ object CoverCache {
             url.contains(".webp", ignoreCase = true) -> "webp"
             else -> "jpg"
         }
-        val bytes = ScrapeHttp.download(url) ?: return null
+        val bytes = ScrapeHttp.downloadCover(url) ?: return null
         if (bytes.isEmpty()) return null
         val dir = File(filesDir, "covers")
         if (!dir.isDirectory && !dir.mkdirs()) return null

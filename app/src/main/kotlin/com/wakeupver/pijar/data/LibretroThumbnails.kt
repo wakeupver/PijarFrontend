@@ -6,6 +6,7 @@ import java.io.File
 import java.net.URLDecoder
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
+import org.json.JSONArray
 
 object LibretroThumbnails {
     private const val ROOT = "https://thumbnails.libretro.com"
@@ -13,6 +14,7 @@ object LibretroThumbnails {
     private const val FAILURE_TTL = 10L * 60 * 1000
     private const val MAX_FUZZY_CANDIDATES = 400
     private const val MAX_TOKEN_POSTINGS = 4
+    private val EXTENSIONS = listOf("png", "jpg")
     private val LINK = Regex("""<a\s+href="([^"]+)"[^>]*>""", RegexOption.IGNORE_CASE)
     private val IMAGE = Regex("""\.(png|jpg|jpeg|webp)$""", RegexOption.IGNORE_CASE)
     private val ILLEGAL = Regex("""[&*/:<>?|"]""")
@@ -37,7 +39,7 @@ object LibretroThumbnails {
     private fun matchUncached(system: String, fileName: String, query: String, cacheDir: File): String? {
         if (system.isBlank()) return null
         val index = index(system, cacheDir)
-        if (index.items.isEmpty()) return null
+        if (index.items.isEmpty()) return directMatch(system, fileName, query)
 
         for (exact in exactCandidates(fileName, query)) {
             val found = index.exact[exact.lowercase(Locale.ROOT)] ?: continue
@@ -74,7 +76,24 @@ object LibretroThumbnails {
                 if (bestScore == 1000) break
             }
         }
-        return bestName?.let { link(system, it) }
+        return bestName?.let { link(system, it) } ?: directMatch(system, fileName, query)
+    }
+
+    private fun directMatch(system: String, fileName: String, query: String): String? {
+        val names = linkedSetOf<String>()
+        for (candidate in candidates(fileName, query)) {
+            val value = candidate.trim()
+            if (value.isBlank()) continue
+            names += value
+            names += ILLEGAL.replace(value, "_")
+        }
+        for (name in names) {
+            for (extension in EXTENSIONS) {
+                val url = link(system, "$name.$extension")
+                if (ScrapeHttp.existsCover(url)) return url
+            }
+        }
+        return null
     }
 
     private fun fuzzyCandidates(query: QueryData, index: IndexedNames): Set<Int> {
@@ -130,7 +149,13 @@ object LibretroThumbnails {
             val stored = readCache(file)
             val names = stored ?: run {
                 val url = "$ROOT/${ScrapeHttp.encode(system)}/Named_Boxarts/"
-                val found = ScrapeHttp.get(url)?.let(::parse).orEmpty()
+                val primary = ScrapeHttp.get(url)?.let(::parse).orEmpty()
+                val found = primary.ifEmpty {
+                    ScrapeHttp.get(
+                        ScrapeHttp.libretroApi(system),
+                        mapOf("Accept" to "application/vnd.github+json"),
+                    )?.let(::parseApi).orEmpty()
+                }
                 writeCache(file, found)
                 found
             }
@@ -178,6 +203,20 @@ object LibretroThumbnails {
             if (raw.isBlank() || raw == "." || raw == "..") continue
             if (!IMAGE.containsMatchIn(raw)) continue
             found += decode(raw)
+        }
+        return found.toList()
+    }
+
+    private fun parseApi(json: String): List<String> {
+        val found = linkedSetOf<String>()
+        try {
+            val array = JSONArray(json)
+            for (index in 0 until array.length()) {
+                val name = array.optJSONObject(index)?.optString("name").orEmpty()
+                if (name.isBlank() || !IMAGE.containsMatchIn(name)) continue
+                found += decode(name)
+            }
+        } catch (_: Exception) {
         }
         return found.toList()
     }
