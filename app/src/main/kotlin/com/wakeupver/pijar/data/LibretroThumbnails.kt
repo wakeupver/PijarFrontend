@@ -7,13 +7,16 @@ import java.net.URLDecoder
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import org.json.JSONArray
+import org.json.JSONObject
 
 object LibretroThumbnails {
     private const val ROOT = "https://thumbnails.libretro.com"
     private const val SUCCESS_TTL = 7L * 24 * 60 * 60 * 1000
     private const val FAILURE_TTL = 10L * 60 * 1000
-    private const val MAX_FUZZY_CANDIDATES = 400
+    private const val MAX_CANDIDATES = 160
+    private const val MAX_URLS = 8
     private const val MAX_TOKEN_POSTINGS = 4
+    private val JSON_HEADERS = mapOf("Accept" to "application/vnd.github+json")
     private val STOPWORDS = setOf(
         "the", "a", "an", "and", "of", "us", "usa", "jp", "japan", "eu", "europe", "world",
         "version", "edition", "rev", "revision", "ver",
@@ -22,226 +25,181 @@ object LibretroThumbnails {
         "ii" to "2", "iii" to "3", "iv" to "4", "vi" to "6",
         "vii" to "7", "viii" to "8", "ix" to "9", "x" to "10",
     )
-    private val EXTENSIONS = listOf("png", "jpg")
     private val LINK = Regex("""<a\s+href="([^"]+)"[^>]*>""", RegexOption.IGNORE_CASE)
     private val IMAGE = Regex("""\.(png|jpg|jpeg|webp)$""", RegexOption.IGNORE_CASE)
-    private val ILLEGAL = Regex("""[&*/:<>?|"]""")
-    private val memory = ConcurrentHashMap<String, CachedIndex>()
-    private val indexLocks = ConcurrentHashMap<String, Any>()
-    private val matches = ConcurrentHashMap<String, String>()
+    private val indexes = ConcurrentHashMap<String, CachedIndex>()
+    private val locks = ConcurrentHashMap<String, Any>()
+
+    private enum class Format { TREE, HTML, CONTENTS }
 
     fun warm(system: String, cacheDir: File) {
-        if (system.isBlank()) return
-        index(system, cacheDir)
+        if (system.isNotBlank()) index(system, cacheDir)
     }
 
-    fun match(system: String, fileName: String, query: String, cacheDir: File): String? {
-        val key = "$system\n$fileName\n$query"
-        val cached = matches[key]
-        if (cached != null) return cached
-        val result = matchUncached(system, fileName, query, cacheDir)
-        if (result != null) matches[key] = result
-        return result
-    }
-
-    private fun matchUncached(system: String, fileName: String, query: String, cacheDir: File): String? {
-        if (system.isBlank()) return null
-        directMatch(system, fileName, query)?.let { return it }
-
+    fun coverUrls(system: String, titles: Collection<String>, cacheDir: File): List<String> {
+        if (system.isBlank() || titles.isEmpty()) return emptyList()
         val index = index(system, cacheDir)
-        if (index.items.isEmpty()) return null
-        val sourceRegions = regions(fileName)
-
-        for (exact in exactCandidates(fileName, query)) {
-            val found = index.exact[exact.lowercase(Locale.ROOT)] ?: continue
-            val best = found.map { index.items[it] }
-                .maxByOrNull { tagBonus(sourceRegions, it.regions) - it.penalty }
-                ?: continue
-            return link(system, best.name)
-        }
-
-        val queries = candidates(fileName, query).map(::queryData)
-        val candidateIndices = LinkedHashSet<Int>()
-        for (entry in queries) {
-            for (id in fuzzyCandidates(entry, index)) {
-                if (!candidateIndices.add(id)) continue
-                if (candidateIndices.size >= MAX_FUZZY_CANDIDATES) break
+        if (index.covers.isEmpty()) return emptyList()
+        val queries = titles.map(::query).filter { it.normalized.isNotBlank() || it.tokens.isNotEmpty() }
+        val scores = HashMap<Int, Int>()
+        for (q in queries) {
+            index.byNormalized[q.normalized]?.forEach { id ->
+                val value = 1000 + regionBonus(q, index.covers[id])
+                scores[id] = maxOf(scores[id] ?: Int.MIN_VALUE, value)
             }
-            if (candidateIndices.size >= MAX_FUZZY_CANDIDATES) break
-        }
-        if (candidateIndices.isEmpty()) return null
-
-        var bestName: String? = null
-        var bestScore = Int.MIN_VALUE
-        var looseName: String? = null
-        var looseScore = Int.MIN_VALUE
-        for (candidateIndex in candidateIndices) {
-            val item = index.items[candidateIndex]
-            var score = 0
-            var strong = false
-            var loose = false
-            for (entry in queries) {
-                score = maxOf(score, score(entry, item))
-                if (!strong) strong = isStrong(entry, item)
-                if (!loose) loose = isLoose(entry, item)
-            }
-            if (!strong && !loose) continue
-            val adjusted = score + tagBonus(sourceRegions, item.regions) - item.penalty
-            if (strong) {
-                if (adjusted > bestScore) {
-                    bestScore = adjusted
-                    bestName = item.name
-                }
-            } else if (adjusted > looseScore) {
-                looseScore = adjusted
-                looseName = item.name
+            for (id in candidates(q, index)) {
+                val item = index.covers[id]
+                val value = similarity(q, item) + regionBonus(q, item) - item.penalty
+                if (value > 0) scores[id] = maxOf(scores[id] ?: Int.MIN_VALUE, value)
             }
         }
-        return (bestName ?: looseName)?.let { link(system, it) }
+        return scores.entries
+            .sortedByDescending { it.value }
+            .take(MAX_URLS)
+            .flatMap { ScrapeHttp.libretroImageUrls(system, index.covers[it.key].name) }
+            .distinct()
     }
 
-    private fun directMatch(system: String, fileName: String, query: String): String? {
-        val names = linkedSetOf<String>()
-        for (candidate in candidates(fileName, query)) {
-            val value = candidate.trim()
-            if (value.isBlank()) continue
-            names += value
-            names += ILLEGAL.replace(value, "_")
-        }
-        for (name in names) {
-            for (extension in EXTENSIONS) {
-                val url = link(system, "$name.$extension")
-                if (ScrapeHttp.existsCover(url)) return url
-            }
-        }
-        return null
+    private fun query(value: String): Query {
+        val normalized = ScrapeMatcher.normalize(value)
+        return Query(normalized, tokens(normalized), regions(value))
     }
 
-    private fun fuzzyCandidates(query: QueryData, index: IndexedNames): Set<Int> {
-        if (query.tokens.isEmpty()) return emptySet()
-        val postings = ArrayList<Pair<String, Set<Int>>>(query.tokens.size)
-        for (token in query.tokens) {
+    private fun candidates(q: Query, index: Index): Set<Int> {
+        if (q.tokens.isEmpty()) return emptySet()
+        val postings = ArrayList<Set<Int>>(q.tokens.size)
+        for (token in q.tokens) {
             val exact = index.byToken[token]
             if (exact != null) {
-                postings += token to exact.toHashSet()
+                postings += exact.toHashSet()
                 continue
             }
-            var near: List<Int>? = null
+            var near: Set<Int>? = null
             for ((key, ids) in index.byToken) {
                 if (key.startsWith(token) || token.startsWith(key)) {
-                    if (near == null || ids.size < near.size) near = ids
+                    if (near == null || ids.size < near.size) near = ids.toHashSet()
                 }
             }
-            if (near != null) postings += token to near.toHashSet()
+            if (near != null) postings += near
         }
         if (postings.isEmpty()) return emptySet()
-        postings.sortBy { it.second.size }
+        postings.sortBy { it.size }
         val rarest = postings.take(MAX_TOKEN_POSTINGS)
-        val base = rarest.minByOrNull { it.second.size }?.second ?: return emptySet()
         val intersection = LinkedHashSet<Int>()
-        for (id in base) {
-            if (rarest.all { it.second.contains(id) }) {
+        for (id in rarest.first()) {
+            if (rarest.all { it.contains(id) }) {
                 intersection += id
-                if (intersection.size >= MAX_FUZZY_CANDIDATES) return intersection
+                if (intersection.size >= MAX_CANDIDATES) return intersection
             }
         }
         if (intersection.isNotEmpty()) return intersection
         val union = LinkedHashSet<Int>()
-        for ((_, ids) in rarest) {
-            for (id in ids) {
+        for (posting in rarest) {
+            for (id in posting) {
                 union += id
-                if (union.size >= MAX_FUZZY_CANDIDATES) return union
+                if (union.size >= MAX_CANDIDATES) return union
             }
         }
         return union
     }
 
-    private fun index(system: String, cacheDir: File): IndexedNames {
-        val key = system.lowercase(Locale.ROOT)
-        memory[key]?.let { cached ->
-            if (!expired(cached)) return cached.index
+    private fun similarity(q: Query, item: IndexedCover): Int {
+        if (q.normalized == item.normalized) return 1000
+        val qt = q.tokens
+        val ct = item.tokens.toList()
+        if (qt.isEmpty() || ct.isEmpty()) return 0
+        if (digits(qt) != digits(ct)) return 0
+        val matchedQuery = qt.count { token -> ct.any { similar(it, token) } }
+        val matchedCandidate = ct.count { token -> qt.any { similar(it, token) } }
+        if (matchedQuery < 2 || matchedCandidate < 2) return 0
+        val coverageQuery = matchedQuery * 100 / qt.size
+        val coverageCandidate = matchedCandidate * 100 / ct.size
+        val base = when {
+            coverageQuery >= 90 && coverageCandidate >= 90 -> 900
+            coverageQuery >= 70 && coverageCandidate >= 70 -> 760
+            coverageQuery >= 50 && coverageCandidate >= 60 -> 560
+            else -> 0
         }
-        val lock = indexLocks.computeIfAbsent(key) { Any() }
+        if (base == 0) return 0
+        return (base - (ct.size - matchedCandidate) * 20 - (qt.size - matchedQuery) * 10).coerceAtLeast(1)
+    }
+
+    private fun digits(tokens: List<String>): Set<String> =
+        tokens.filter { token -> token.any { it.isDigit() } }.toSet()
+
+    private fun similar(a: String, b: String): Boolean =
+        a == b || (a.length >= 3 && b.length >= 3 && (a.startsWith(b) || b.startsWith(a)))
+
+    private fun regionBonus(q: Query, item: IndexedCover): Int {
+        if (q.regions.isEmpty() || item.regions.isEmpty()) return 0
+        val overlap = q.regions.intersect(item.regions).size
+        return if (overlap > 0) 12 * overlap else -8
+    }
+
+    private fun index(system: String, cacheDir: File): Index {
+        val key = system.lowercase(Locale.ROOT)
+        indexes[key]?.let { cached ->
+            if (!cached.expired()) return cached.index
+        }
+        val lock = locks.computeIfAbsent(key) { Any() }
         return synchronized(lock) {
-            memory[key]?.let { cached ->
-                if (!expired(cached)) return@synchronized cached.index
+            indexes[key]?.let { cached ->
+                if (!cached.expired()) return@synchronized cached.index
             }
             val file = cacheFile(cacheDir, key)
             val stored = readCache(file)
-            val names = stored ?: run {
-                val url = "$ROOT/${ScrapeHttp.encode(system)}/Named_Boxarts/"
-                val primary = ScrapeHttp.get(url)?.let(::parse).orEmpty()
-                val found = primary.ifEmpty {
-                    ScrapeHttp.get(
-                        ScrapeHttp.libretroApi(system),
-                        mapOf("Accept" to "application/vnd.github+json"),
-                    )?.let(::parseApi).orEmpty()
-                }
-                writeCache(file, found)
-                found
-            }
+            val names = stored ?: loadNames(system).also { writeCache(file, it) }
             val built = build(names)
-            memory[key] = CachedIndex(System.currentTimeMillis(), built)
+            indexes[key] = CachedIndex(System.currentTimeMillis(), built)
             built
         }
     }
 
-    private fun build(names: List<String>): IndexedNames {
-        val items = ArrayList<IndexedCover>(names.size)
-        val byToken = HashMap<String, MutableList<Int>>()
-        val exact = HashMap<String, MutableList<Int>>()
-        names.forEachIndexed { index, name ->
-            val base = GameTitles.baseName(name)
-            val display = GameTitles.clean(name).ifBlank { base }
-            val item = IndexedCover(
-                name = name,
-                normalized = ScrapeMatcher.normalize(display),
-                tokens = tokens(ScrapeMatcher.normalize(display)).toSet(),
-                regions = regions(name),
-                penalty = qualityPenalty(name),
-            )
-            items += item
-            item.tokens.forEach { token ->
-                byToken.getOrPut(token) { ArrayList() }.add(index)
-            }
-            putExact(exact, ILLEGAL.replace(base, "_"), index)
-            putExact(exact, ILLEGAL.replace(name, "_"), index)
-            putExact(exact, name, index)
-            putExact(exact, ScrapeMatcher.normalize(display), index)
-            putExact(exact, ScrapeMatcher.normalize(name), index)
-        }
-        return IndexedNames(items, byToken, exact)
-    }
-
-    private fun putExact(exact: HashMap<String, MutableList<Int>>, value: String, index: Int) {
-        val key = value.lowercase(Locale.ROOT)
-        if (key.isNotBlank()) exact.getOrPut(key) { ArrayList() }.add(index)
-    }
-
-    private fun parse(html: String): List<String> {
+    private fun loadNames(system: String): List<String> {
         val found = linkedSetOf<String>()
-        for (result in LINK.findAll(html)) {
-            val href = result.groupValues[1]
-            val raw = href.substring(href.lastIndexOf('/') + 1)
-            if (raw.isBlank() || raw == "." || raw == "..") continue
-            if (!IMAGE.containsMatchIn(raw)) continue
-            found += decode(raw)
-        }
+        val tree = ScrapeHttp.get(ScrapeHttp.libretroTreeApi(system), JSON_HEADERS)
+        if (!tree.isNullOrBlank()) parse(tree, Format.TREE, found)
+        val html = ScrapeHttp.get("$ROOT/${ScrapeHttp.encode(system)}/Named_Boxarts/")
+        if (!html.isNullOrBlank()) parse(html, Format.HTML, found)
+        val contents = ScrapeHttp.get(ScrapeHttp.libretroContentsApi(system), JSON_HEADERS)
+        if (!contents.isNullOrBlank()) parse(contents, Format.CONTENTS, found)
         return found.toList()
     }
 
-    private fun parseApi(json: String): List<String> {
-        val found = linkedSetOf<String>()
-        try {
-            val array = JSONArray(json)
-            for (index in 0 until array.length()) {
-                val name = array.optJSONObject(index)?.optString("name").orEmpty()
-                if (name.isBlank() || !IMAGE.containsMatchIn(name)) continue
-                found += decode(name)
+    private fun parse(text: String, format: Format, output: MutableSet<String>) {
+        when (format) {
+            Format.HTML -> {
+                for (result in LINK.findAll(text)) {
+                    val href = result.groupValues[1]
+                    addName(href.substring(href.lastIndexOf('/') + 1), output, true)
+                }
             }
-        } catch (_: Exception) {
+            Format.CONTENTS -> {
+                try {
+                    val array = JSONArray(text)
+                    for (i in 0 until array.length()) {
+                        addName(array.optJSONObject(i)?.optString("name").orEmpty(), output, false)
+                    }
+                } catch (_: Exception) {
+                }
+            }
+            Format.TREE -> {
+                try {
+                    val tree = JSONObject(text).optJSONArray("tree") ?: return
+                    for (i in 0 until tree.length()) {
+                        val path = tree.optJSONObject(i)?.optString("path").orEmpty()
+                        if (!path.startsWith("Named_Boxarts/")) continue
+                        addName(path.substringAfterLast('/'), output, false)
+                    }
+                } catch (_: Exception) {
+                }
+            }
         }
-        return found.toList()
+    }
+
+    private fun addName(raw: String, output: MutableSet<String>, decodeValue: Boolean) {
+        val value = (if (decodeValue) decode(raw) else raw).trim()
+        if (value.isNotBlank() && IMAGE.containsMatchIn(value)) output += value
     }
 
     private fun decode(value: String): String {
@@ -253,89 +211,31 @@ object LibretroThumbnails {
         }
     }
 
-    private fun candidates(fileName: String, query: String): List<String> {
-        val result = linkedSetOf<String>()
-        result += GameTitles.baseName(fileName).trim()
-        result += GameTitles.clean(fileName).trim()
-        result += query.trim()
-        return result.filter { it.isNotEmpty() }
+    private fun build(names: List<String>): Index {
+        val covers = ArrayList<IndexedCover>(names.size)
+        val byToken = HashMap<String, MutableList<Int>>()
+        val byNormalized = HashMap<String, MutableList<Int>>()
+        names.forEachIndexed { i, name ->
+            val normalized = ScrapeMatcher.normalize(GameTitles.clean(name))
+                .ifBlank { ScrapeMatcher.normalize(GameTitles.baseName(name)) }
+            val item = IndexedCover(
+                name = name,
+                normalized = normalized,
+                tokens = tokens(normalized).toSet(),
+                regions = regions(name),
+                penalty = qualityPenalty(name),
+            )
+            covers += item
+            if (normalized.isNotBlank()) byNormalized.getOrPut(normalized) { ArrayList() }.add(i)
+            item.tokens.forEach { token -> byToken.getOrPut(token) { ArrayList() }.add(i) }
+        }
+        return Index(covers, byToken, byNormalized)
     }
-
-    private fun exactCandidates(fileName: String, query: String): List<String> =
-        candidates(fileName, query)
-            .flatMap { listOf(ILLEGAL.replace(it, "_"), ScrapeMatcher.normalize(it)) }
-            .filter { it.isNotBlank() }
-            .distinct()
 
     private fun tokens(value: String): List<String> =
         value.split(' ')
             .map { TOKEN_ALIASES[it] ?: it }
             .filter { it.isNotBlank() && it !in STOPWORDS && (it.length > 1 || it[0].isDigit()) }
-
-    private fun queryData(value: String): QueryData {
-        val normalized = ScrapeMatcher.normalize(value)
-        return QueryData(normalized, tokens(normalized))
-    }
-
-    private fun score(query: QueryData, item: IndexedCover): Int {
-        val q = query.normalized
-        val c = item.normalized
-        if (q.isEmpty() || c.isEmpty()) return 0
-        if (q == c) return 1000
-        val qt = query.tokens
-        val ct = item.tokens.toList()
-        if (qt.isEmpty() || ct.isEmpty()) return 0
-        val matchedQuery = qt.count { token -> ct.any { similar(it, token) } }
-        val matchedCandidate = ct.count { token -> qt.any { similar(it, token) } }
-        val coverageQuery = matchedQuery * 100 / qt.size
-        val coverageCandidate = matchedCandidate * 100 / ct.size
-        val base = when {
-            coverageQuery >= 90 && coverageCandidate >= 90 -> 900
-            coverageQuery >= 70 && coverageCandidate >= 70 -> 700
-            coverageQuery >= 50 && coverageCandidate >= 50 -> 450
-            else -> 0
-        }
-        if (base == 0) return 0
-        val extraCandidate = ct.size - matchedCandidate
-        val extraQuery = qt.size - matchedQuery
-        return (base - extraCandidate * 25 - extraQuery * 10).coerceAtLeast(1)
-    }
-
-    private fun isStrong(query: QueryData, item: IndexedCover): Boolean {
-        if (query.normalized == item.normalized) return true
-        val qt = query.tokens
-        val ct = item.tokens.toList()
-        if (qt.isEmpty() || ct.isEmpty()) return false
-        if (kotlin.math.abs(qt.size - ct.size) > 1) return false
-        val matchedQuery = qt.count { token -> ct.any { similar(it, token) } }
-        val matchedCandidate = ct.count { token -> qt.any { similar(it, token) } }
-        return matchedQuery * 100 / qt.size >= 80 && matchedCandidate * 100 / ct.size >= 80
-    }
-
-    private fun isLoose(query: QueryData, item: IndexedCover): Boolean {
-        if (query.normalized == item.normalized) return true
-        val qt = query.tokens
-        val ct = item.tokens.toList()
-        if (qt.isEmpty() || ct.isEmpty()) return false
-        val matchedQuery = qt.count { token -> ct.any { similar(it, token) } }
-        val matchedCandidate = ct.count { token -> qt.any { similar(it, token) } }
-        if (matchedQuery < 2 || matchedCandidate < 2) return false
-        if (matchedQuery * 100 / qt.size < 40) return false
-        if (matchedCandidate * 100 / ct.size < 60) return false
-        val queryDigits = qt.filter { it.any { char -> char.isDigit() } }.toSet()
-        val candidateDigits = ct.filter { it.any { char -> char.isDigit() } }.toSet()
-        return queryDigits == candidateDigits
-    }
-
-    private fun similar(a: String, b: String): Boolean =
-        a == b || (a.length >= 3 && b.length >= 3 && (a.startsWith(b) || b.startsWith(a)))
-
-    private fun tagBonus(source: Set<String>, candidate: Set<String>): Int {
-        if (source.isEmpty() || candidate.isEmpty()) return 0
-        val overlap = source.intersect(candidate).size
-        if (overlap > 0) return 10 * overlap
-        return if ("world" in source) 5 else -10
-    }
 
     private fun regions(value: String): Set<String> {
         val result = linkedSetOf<String>()
@@ -364,9 +264,6 @@ object LibretroThumbnails {
         return if (GameTitles.tags(value).any { tag -> bad.any { tag.contains(it, ignoreCase = true) } }) 70 else 0
     }
 
-    private fun link(system: String, name: String): String =
-        "$ROOT/${ScrapeHttp.encode(system)}/Named_Boxarts/${ScrapeHttp.encode(name)}"
-
     private fun cacheFile(cacheDir: File, key: String): File {
         val safe = key.map { if (it.isLetterOrDigit() || it == '-' || it == '_') it else '_' }
             .joinToString("")
@@ -382,8 +279,8 @@ object LibretroThumbnails {
             return null
         }
         val names = if (text.isBlank()) emptyList() else text.lineSequence().filter { it.isNotBlank() }.toList()
-        val age = System.currentTimeMillis() - file.lastModified()
         val ttl = if (names.isEmpty()) FAILURE_TTL else SUCCESS_TTL
+        val age = System.currentTimeMillis() - file.lastModified()
         if (age < 0L || age > ttl) return null
         return names
     }
@@ -396,13 +293,11 @@ object LibretroThumbnails {
         }
     }
 
-    private fun expired(entry: CachedIndex): Boolean {
-        val age = System.currentTimeMillis() - entry.at
-        val ttl = if (entry.index.items.isEmpty()) FAILURE_TTL else SUCCESS_TTL
-        return age < 0L || age > ttl
-    }
-
-    private data class QueryData(val normalized: String, val tokens: List<String>)
+    private data class Query(
+        val normalized: String,
+        val tokens: List<String>,
+        val regions: Set<String>,
+    )
 
     private data class IndexedCover(
         val name: String,
@@ -412,11 +307,17 @@ object LibretroThumbnails {
         val penalty: Int,
     )
 
-    private data class IndexedNames(
-        val items: List<IndexedCover>,
+    private data class Index(
+        val covers: List<IndexedCover>,
         val byToken: Map<String, List<Int>>,
-        val exact: Map<String, List<Int>>,
+        val byNormalized: Map<String, List<Int>>,
     )
 
-    private data class CachedIndex(val at: Long, val index: IndexedNames)
+    private data class CachedIndex(val at: Long, val index: Index) {
+        fun expired(): Boolean {
+            val ttl = if (index.covers.isEmpty()) FAILURE_TTL else SUCCESS_TTL
+            val age = System.currentTimeMillis() - at
+            return age < 0L || age > ttl
+        }
+    }
 }

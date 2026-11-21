@@ -258,14 +258,10 @@ class Repository(private val context: Context) {
         val platform = _catalog.value[game.platformId]
         _scraping.update { it + gameId }
         try {
-            val metadata = Scraper.scrape(game, platform, context.cacheDir)
+            val metadata = Scraper.scrape(game, platform, context.filesDir, context.cacheDir)
             if (!metadata.hasData) return false
-            val downloaded = metadata.coverUrl.takeIf { it.isNotBlank() }
-                ?.let { CoverCache.fetch(context.filesDir, game.id, it) }
-                .orEmpty()
-            val finalMetadata = metadata.copy(coverPath = downloaded.ifBlank { metadata.coverPath })
             update { s ->
-                s.copy(games = s.games.map { if (it.id == gameId) it.copy(metadata = finalMetadata) else it })
+                s.copy(games = s.games.map { if (it.id == gameId) it.copy(metadata = metadata) else it })
             }
             return true
         } catch (e: Exception) {
