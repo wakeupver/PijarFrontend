@@ -14,7 +14,14 @@ object LibretroThumbnails {
     private const val FAILURE_TTL = 10L * 60 * 1000
     private const val MAX_FUZZY_CANDIDATES = 400
     private const val MAX_TOKEN_POSTINGS = 4
-    private val STOPWORDS = setOf("the", "a", "an", "and", "of", "us", "usa", "jp", "japan", "eu", "europe", "world")
+    private val STOPWORDS = setOf(
+        "the", "a", "an", "and", "of", "us", "usa", "jp", "japan", "eu", "europe", "world",
+        "version", "edition", "rev", "revision", "ver",
+    )
+    private val TOKEN_ALIASES = mapOf(
+        "ii" to "2", "iii" to "3", "iv" to "4", "vi" to "6",
+        "vii" to "7", "viii" to "8", "ix" to "9", "x" to "10",
+    )
     private val EXTENSIONS = listOf("png", "jpg")
     private val LINK = Regex("""<a\s+href="([^"]+)"[^>]*>""", RegexOption.IGNORE_CASE)
     private val IMAGE = Regex("""\.(png|jpg|jpeg|webp)$""", RegexOption.IGNORE_CASE)
@@ -66,22 +73,31 @@ object LibretroThumbnails {
 
         var bestName: String? = null
         var bestScore = Int.MIN_VALUE
+        var looseName: String? = null
+        var looseScore = Int.MIN_VALUE
         for (candidateIndex in candidateIndices) {
             val item = index.items[candidateIndex]
             var score = 0
             var strong = false
+            var loose = false
             for (entry in queries) {
                 score = maxOf(score, score(entry, item))
-                if (!strong && isStrong(entry, item)) strong = true
+                if (!strong) strong = isStrong(entry, item)
+                if (!loose) loose = isLoose(entry, item)
             }
-            if (!strong) continue
+            if (!strong && !loose) continue
             val adjusted = score + tagBonus(sourceRegions, item.regions) - item.penalty
-            if (adjusted > bestScore) {
-                bestScore = adjusted
-                bestName = item.name
+            if (strong) {
+                if (adjusted > bestScore) {
+                    bestScore = adjusted
+                    bestName = item.name
+                }
+            } else if (adjusted > looseScore) {
+                looseScore = adjusted
+                looseName = item.name
             }
         }
-        return bestName?.let { link(system, it) }
+        return (bestName ?: looseName)?.let { link(system, it) }
     }
 
     private fun directMatch(system: String, fileName: String, query: String): String? {
@@ -252,7 +268,9 @@ object LibretroThumbnails {
             .distinct()
 
     private fun tokens(value: String): List<String> =
-        value.split(' ').filter { it.isNotBlank() && it !in STOPWORDS }
+        value.split(' ')
+            .map { TOKEN_ALIASES[it] ?: it }
+            .filter { it.isNotBlank() && it !in STOPWORDS && (it.length > 1 || it[0].isDigit()) }
 
     private fun queryData(value: String): QueryData {
         val normalized = ScrapeMatcher.normalize(value)
@@ -292,6 +310,21 @@ object LibretroThumbnails {
         val matchedQuery = qt.count { token -> ct.any { similar(it, token) } }
         val matchedCandidate = ct.count { token -> qt.any { similar(it, token) } }
         return matchedQuery * 100 / qt.size >= 80 && matchedCandidate * 100 / ct.size >= 80
+    }
+
+    private fun isLoose(query: QueryData, item: IndexedCover): Boolean {
+        if (query.normalized == item.normalized) return true
+        val qt = query.tokens
+        val ct = item.tokens.toList()
+        if (qt.isEmpty() || ct.isEmpty()) return false
+        val matchedQuery = qt.count { token -> ct.any { similar(it, token) } }
+        val matchedCandidate = ct.count { token -> qt.any { similar(it, token) } }
+        if (matchedQuery < 2 || matchedCandidate < 2) return false
+        if (matchedQuery * 100 / qt.size < 40) return false
+        if (matchedCandidate * 100 / ct.size < 60) return false
+        val queryDigits = qt.filter { it.any { char -> char.isDigit() } }.toSet()
+        val candidateDigits = ct.filter { it.any { char -> char.isDigit() } }.toSet()
+        return queryDigits == candidateDigits
     }
 
     private fun similar(a: String, b: String): Boolean =
