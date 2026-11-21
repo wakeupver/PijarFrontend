@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,7 +37,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.toShape
+import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
+import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -151,36 +153,38 @@ fun HomeScreen(
                             }
                         },
                     )
-                    // Kartu platform berukuran tetap berapa pun jumlah platformnya, dan barisnya memakai LazyRow biasa
-                    // (sama seperti rak game di bawahnya). Carousel Material sengaja tidak dipakai di sini:
-                    //  - HorizontalMultiBrowseCarousel memilih susunan besar/sedang/kecil menurut jumlah item, sehingga
-                    //    semua kartu menyusut begitu platform lebih dari 3.
-                    //  - HorizontalUncontainedCarousel hanya menyusun item yang berada di dalam viewport pager-nya,
-                    //    padahal posisi tampilnya digeser ke tepi kanan; kartu yang baru masuk belum tersusun dan
-                    //    muncul tiba-tiba (berkedip) saat digeser.
-                    // Jendela = lebar teks judul (dikurangi margin kiri-kanan); kartu berikutnya mengintip dan
-                    // terpotong di tepi kanan jendela.
+                    // Carousel Material multi-browse asli (animasi morph + snap), dengan ukuran kartu yang tetap berapa
+                    // pun jumlah platformnya. Susunan multi-browse dipilih menurut JUMLAH item: selalu ada 1 slot item
+                    // kecil, tetapi dengan <= 3 item slot itu dibuang (jadi 1 besar + 1 yang mengintip), sedangkan
+                    // mulai 4 item muncul susunan 2 besar + 1 sedang + 1 kecil sehingga semua kartu menyusut.
+                    // Ukuran item kecil dikunci 0dp supaya slot itu selalu ada tetapi tidak terlihat: susunannya jadi
+                    // sama untuk berapa pun jumlah platform (1 besar + 1 yang mengintip, item berikutnya muncul dari
+                    // tepi kanan). preferredItemWidth dibatasi 68% lebar jendela agar layar sempit tidak berpindah ke
+                    // satu kartu penuh. key(platforms.size): susunan dihitung ulang saat jumlah platform berubah.
+                    // Jendela = lebar teks judul (dikurangi margin kiri-kanan).
                     BoxWithConstraints(modifier = Modifier.padding(horizontal = edge).fillMaxWidth()) {
-                        val cardWidth = minOf(PlatformCardMaxWidth, maxWidth * PlatformCardWindowFraction)
-                        val cardShape = MaterialTheme.shapes.extraLarge
-                        LazyRow(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(208.dp)
-                                .clip(cardShape),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            items(platforms, contentType = { "platform" }) { def ->
+                        val preferredWidth = minOf(PlatformCardMaxWidth, maxWidth * PlatformCardWindowFraction)
+                        key(platforms.size) {
+                            HorizontalMultiBrowseCarousel(
+                                state = rememberCarouselState { platforms.size },
+                                preferredItemWidth = preferredWidth,
+                                // Sudut potong jendela sama dengan sudut kartu platform.
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(208.dp)
+                                    .clip(MaterialTheme.shapes.extraLarge),
+                                itemSpacing = 10.dp,
+                                minSmallItemWidth = 0.dp,
+                                maxSmallItemWidth = 0.dp,
+                            ) { index ->
+                                val def = platforms[index]
                                 PlatformCard(
                                     def = def,
                                     count = counts[def.uniqueId] ?: 0,
                                     haptics = haptics,
                                     onClick = { onOpenPlatform(def.uniqueId) },
                                     onLongClick = { onLongOpenPlatform(def.uniqueId) },
-                                    modifier = Modifier
-                                        .width(cardWidth)
-                                        .fillMaxHeight()
-                                        .clip(cardShape),
+                                    modifier = Modifier.maskClip(MaterialTheme.shapes.extraLarge),
                                 )
                             }
                         }
@@ -399,12 +403,13 @@ private fun GameShelf(
 
 private val ShelfCardWidth = 132.dp
 
-/** Lebar kartu platform maksimum di baris Platforms Beranda (sama dengan target lebar lama, 232dp). */
+/** Target lebar kartu platform maksimum di carousel Platforms Beranda (232dp, sama dengan nilai awal). */
 private val PlatformCardMaxWidth = 232.dp
 
 /**
- * Lebar kartu platform sebagai pecahan lebar jendela baris. 0,68 adalah ukuran kartu besar yang tampil saat
- * platform <= 3 (sisanya dipakai kartu berikutnya yang mengintip), supaya tampilannya tetap sama untuk semua jumlah.
+ * Target lebar kartu platform sebagai pecahan lebar jendela carousel (preferredItemWidth). 0,68 adalah ukuran
+ * kartu besar yang tampil saat platform <= 3 (sisanya dipakai kartu berikutnya yang mengintip); ukuran akhirnya
+ * dihitung carousel agar pas di jendela.
  */
 private const val PlatformCardWindowFraction = 0.68f
 
