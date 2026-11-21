@@ -23,6 +23,7 @@ class GamepadButtonView(
         typeface = Typeface.DEFAULT_BOLD
     }
     private var activePointer = -1
+    private var pressed = false
 
     init {
         isClickable = true
@@ -34,7 +35,7 @@ class GamepadButtonView(
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 activePointer = event.getPointerId(0)
-                setPressed(true)
+                updatePressed(true)
                 backend.setButton(control, true)
                 return true
             }
@@ -57,13 +58,13 @@ class GamepadButtonView(
     private fun release() {
         if (activePointer == -1) return
         activePointer = -1
-        setPressed(false)
+        updatePressed(false)
         backend.setButton(control, false)
     }
 
-    private fun setPressed(value: Boolean) {
-        if (isPressed == value) return
-        isPressed = value
+    private fun updatePressed(value: Boolean) {
+        if (pressed == value) return
+        pressed = value
         invalidate()
     }
 
@@ -72,9 +73,9 @@ class GamepadButtonView(
         val cx = width / 2f
         val cy = height / 2f
         val radius = minOf(width, height) / 2f - 1f
-        fill.color = if (isPressed) Color.argb(235, 98, 0, 238) else Color.argb(155, 18, 18, 24)
+        fill.color = if (pressed) Color.argb(235, 98, 0, 238) else Color.argb(155, 18, 18, 24)
         canvas.drawCircle(cx, cy, radius, fill)
-        border.color = if (isPressed) Color.WHITE else Color.argb(185, 255, 255, 255)
+        border.color = if (pressed) Color.WHITE else Color.argb(185, 255, 255, 255)
         border.strokeWidth = 2f
         canvas.drawCircle(cx, cy, radius, border)
         val text = control.face
